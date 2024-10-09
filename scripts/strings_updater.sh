@@ -74,7 +74,7 @@ def create_strings_xml(strings, plurals, lang_code):
             item_elem.text = value
 
     output_dir = f"res/values-{lang_code}"
-    os.makedirs(output_dir, exist_ok=True)
+    os.makedirs(output_dir, exist_ok=True)  # Ensure the directory exists
     tree = ET.ElementTree(resources)
     tree.write(f'{output_dir}/strings.xml', encoding='utf-8', xml_declaration=True)
 

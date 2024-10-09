@@ -33,8 +33,10 @@ import os
 SCOPES = ['https://www.googleapis.com/auth/spreadsheets.readonly']
 SPREADSHEET_ID = "$SPREADSHEET_ID"
 RANGE_NAME = "$RANGE_NAME"
+
+# Convert the languages and columns from bash arrays to Python lists
 LANGUAGES = ${LANGUAGES[@]}
-LANGUAGE_COLUMNS = ${LANGUAGE_COLUMNS[@]}
+LANGUAGE_COLUMNS = [int(x) for x in ${LANGUAGE_COLUMNS[@]}]
 
 def authenticate_google_sheets(credentials_path):
     creds = ServiceAccountCredentials.from_json_keyfile_name(credentials_path, SCOPES)

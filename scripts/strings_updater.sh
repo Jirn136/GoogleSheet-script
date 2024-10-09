@@ -1,20 +1,7 @@
 #!/bin/bash
 
-# Function to read user input for Google Sheets ID, Base64 encoded credentials, and range
-read_user_input() {
-    echo "Enter the Google Sheets ID:"
-    read SHEET_ID
-    echo "Enter the Base64 encoded credentials JSON:"
-    read CREDENTIALS_JSON
-    echo "Enter the Google Sheets Range (e.g., Sheet1!A:F):"
-    read RANGE_NAME
-}
-
 # Decode credentials from the environment variable
 echo $CREDENTIALS_JSON | base64 --decode > credentials.json
-
-# Get user input
-read_user_input
 
 # Install required dependencies if not installed
 pip install gspread oauth2client xmltodict --quiet
@@ -24,10 +11,9 @@ python3 <<EOF
 import gspread
 from oauth2client.service_account import ServiceAccountCredentials
 import xml.etree.ElementTree as ET
-import json
 import os
 
-# Configuration from user input
+# Configuration from environment variables
 SCOPES = ['https://www.googleapis.com/auth/spreadsheets.readonly']
 SPREADSHEET_ID = "$SHEET_ID"
 RANGE_NAME = "$RANGE_NAME"

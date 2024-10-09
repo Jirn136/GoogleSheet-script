@@ -33,6 +33,10 @@ jobs:
         run: |
           mkdir -p generated_strings
 
+      - name: Make script executable
+        run: |
+          chmod +x ./scripts/string_updater.sh
+
       - name: Run String Updater Script
         run: |
           ./scripts/strings_updater.sh "${{ github.event.inputs.sheet_id }}" "${{ github.event.inputs.credentials_json }}" "${{ github.event.inputs.range_name }}"

@@ -1,18 +1,19 @@
 #!/bin/bash
 
-# Function to read user input for the spreadsheet range
+# Function to read user input for Google Sheets ID, Base64 encoded credentials, and range
 read_user_input() {
+    echo "Enter the Google Sheets ID:"
+    read SHEET_ID
+    echo "Enter the Base64 encoded credentials JSON:"
+    read CREDENTIALS_JSON
     echo "Enter the Google Sheets Range (e.g., Sheet1!A:F):"
     read RANGE_NAME
 }
 
-# Set variables
-SPREADSHEET_ID="$SPREADSHEET_ID"
-
 # Decode credentials from the environment variable
 echo $CREDENTIALS_JSON | base64 --decode > credentials.json
 
-# Get user input for the range
+# Get user input
 read_user_input
 
 # Install required dependencies if not installed
@@ -23,11 +24,12 @@ python3 <<EOF
 import gspread
 from oauth2client.service_account import ServiceAccountCredentials
 import xml.etree.ElementTree as ET
+import json
 import os
 
 # Configuration from user input
 SCOPES = ['https://www.googleapis.com/auth/spreadsheets.readonly']
-SPREADSHEET_ID = "$SPREADSHEET_ID"
+SPREADSHEET_ID = "$SHEET_ID"
 RANGE_NAME = "$RANGE_NAME"
 
 def authenticate_google_sheets(credentials_path):
@@ -35,34 +37,29 @@ def authenticate_google_sheets(credentials_path):
     client = gspread.authorize(creds)
     return client
 
-def fetch_languages_and_columns(sheet):
-    # Fetch the first row to get languages
-    header_row = sheet.row_values(1)  # Get the first row (header)
-    languages = []
-    language_columns = []
-    
-    for index, value in enumerate(header_row):
-        if value:  # Check if the cell is not empty
-            languages.append(value)  # Add the language code
-            language_columns.append(index)  # Store the column index
-    
-    return languages, language_columns
+def fetch_languages(sheet):
+    data = sheet.get(RANGE_NAME)
+    # The first row contains the language codes starting from the 4th column
+    languages = data[0][3:]  # Adjust the index to get languages from the 4th column onwards
+    return languages
 
-def fetch_strings(sheet, lang_column_index):
+def fetch_strings(sheet, lang_columns):
     data = sheet.get(RANGE_NAME)
     strings = {}
     plurals = {}
 
     for row in data[1:]:  # Skip header row
         key, type_value, quantity, *translations = row
-        value = translations[lang_column_index]
 
-        if type_value.lower() == "plural":
-            if key not in plurals:
-                plurals[key] = {}
-            plurals[key][quantity] = value
-        elif type_value.lower() == "string":
-            strings[key] = value
+        for lang_index, lang_column_index in enumerate(lang_columns):
+            value = translations[lang_index]
+
+            if type_value.lower() == "plural":
+                if key not in plurals:
+                    plurals[key] = {}
+                plurals[key][quantity] = value
+            elif type_value.lower() == "string":
+                strings[key] = value
 
     return strings, plurals
 
@@ -81,20 +78,20 @@ def create_strings_xml(strings, plurals, lang_code):
             item_elem = ET.SubElement(plural_elem, 'item', quantity=quantity)
             item_elem.text = value
 
-    os.makedirs(f"android/res/values-{lang_code}", exist_ok=True)
+    os.makedirs(f"generated_strings/values-{lang_code}", exist_ok=True)
     tree = ET.ElementTree(resources)
-    tree.write(f'android/res/values-{lang_code}/strings.xml', encoding='utf-8', xml_declaration=True)
+    tree.write(f'generated_strings/values-{lang_code}/strings.xml', encoding='utf-8', xml_declaration=True)
 
 def main():
     credentials_path = "credentials.json"
     client = authenticate_google_sheets(credentials_path)
     sheet = client.open_by_key(SPREADSHEET_ID).sheet1
 
-    # Fetch languages and their corresponding columns
-    languages, language_columns = fetch_languages_and_columns(sheet)
+    languages = fetch_languages(sheet)
+    lang_columns = list(range(len(languages)))  # Create a list of indices for the language columns
 
     for lang_index, lang_code in enumerate(languages):
-        strings, plurals = fetch_strings(sheet, language_columns[lang_index] - 1)  # Adjust for column offset
+        strings, plurals = fetch_strings(sheet, lang_columns)  # Pass indices of language columns
         create_strings_xml(strings, plurals, lang_code)
 
 if __name__ == '__main__':

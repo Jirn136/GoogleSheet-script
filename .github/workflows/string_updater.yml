@@ -1,4 +1,4 @@
-name: Generate Strings
+name: String Updater
 
 on:
   workflow_dispatch:
@@ -11,6 +11,12 @@ on:
         required: true
       credentials_json:
         description: 'Base64 Encoded Credentials JSON'
+        required: true
+      languages:
+        description: 'Languages (space-separated, e.g., en de fr)'
+        required: true
+      language_columns:
+        description: 'Column numbers for each language (space-separated, e.g., 3 4 5)'
         required: true
 
 jobs:
@@ -34,6 +40,8 @@ jobs:
           SPREADSHEET_ID: ${{ github.event.inputs.spreadsheet_id }}
           RANGE_NAME: ${{ github.event.inputs.range_name }}
           CREDENTIALS_JSON: ${{ github.event.inputs.credentials_json }}
+          LANGUAGES: ${{ github.event.inputs.languages }}
+          LANGUAGE_COLUMNS: ${{ github.event.inputs.language_columns }}
         run: |
           chmod +x ./scripts/string_updater.sh
           ./scripts/string_updater.sh

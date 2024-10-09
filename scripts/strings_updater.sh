@@ -1,7 +1,19 @@
 #!/bin/bash
 
+# Function to read user input for spreadsheet details
+read_user_input() {
+    echo "Enter the Google Sheets Range (e.g., Sheet1!A:F):"
+    read RANGE_NAME
+}
+
+# Set variables
+SPREADSHEET_ID="$SHEET_ID"
+
 # Decode credentials from the environment variable
-echo $CREDENTIALS_JSON | base64 --decode > credentials.json
+echo "$CREDENTIALS_JSON" | base64 --decode > credentials.json
+
+# Get user input for the range name
+read_user_input
 
 # Install required dependencies if not installed
 pip install gspread oauth2client xmltodict --quiet
@@ -13,9 +25,9 @@ from oauth2client.service_account import ServiceAccountCredentials
 import xml.etree.ElementTree as ET
 import os
 
-# Configuration from environment variables
+# Configuration from user input
 SCOPES = ['https://www.googleapis.com/auth/spreadsheets.readonly']
-SPREADSHEET_ID = "$SHEET_ID"
+SPREADSHEET_ID = "$SPREADSHEET_ID"
 RANGE_NAME = "$RANGE_NAME"
 
 def authenticate_google_sheets(credentials_path):
@@ -23,21 +35,17 @@ def authenticate_google_sheets(credentials_path):
     client = gspread.authorize(creds)
     return client
 
-def fetch_languages(sheet):
-    data = sheet.get(RANGE_NAME)
-    # The first row contains the language codes starting from the 4th column
-    languages = data[0][3:]  # Adjust the index to get languages from the 4th column onwards
-    return languages
-
-def fetch_strings(sheet, lang_columns):
+def fetch_strings(sheet):
     data = sheet.get(RANGE_NAME)
     strings = {}
     plurals = {}
 
-    for row in data[1:]:  # Skip header row
-        key, type_value, quantity, *translations = row
+    # Assuming the first row contains headers
+    languages = data[0][3:]  # Get language columns from the 4th column onward (zero-indexed)
 
-        for lang_index, lang_column_index in enumerate(lang_columns):
+    for lang_index, lang_code in enumerate(languages):
+        for row in data[1:]:  # Skip header row
+            key, type_value, quantity, *translations = row
             value = translations[lang_index]
 
             if type_value.lower() == "plural":
@@ -73,11 +81,8 @@ def main():
     client = authenticate_google_sheets(credentials_path)
     sheet = client.open_by_key(SPREADSHEET_ID).sheet1
 
-    languages = fetch_languages(sheet)
-    lang_columns = list(range(len(languages)))  # Create a list of indices for the language columns
-
-    for lang_index, lang_code in enumerate(languages):
-        strings, plurals = fetch_strings(sheet, lang_columns)  # Pass indices of language columns
+    strings, plurals = fetch_strings(sheet)
+    for lang_index, lang_code in enumerate(sheet.row_values(1)[3:]):  # Language codes from the header
         create_strings_xml(strings, plurals, lang_code)
 
 if __name__ == '__main__':

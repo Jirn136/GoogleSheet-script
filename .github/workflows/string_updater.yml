@@ -35,7 +35,7 @@ jobs:
 
       - name: Make script executable
         run: |
-          chmod +x ./scripts/string_updater.sh
+          chmod +x ./scripts/strings_updater.sh
 
       - name: Run String Updater Script
         run: |

@@ -28,11 +28,15 @@ jobs:
           chmod +x ./scripts/strings_updater.sh
           ./scripts/strings_updater.sh
 
+      - name: Ensure generated_strings directory exists
+        run: |
+          mkdir -p generated_strings  # Create the directory if it doesn't exist
+
       - name: Commit and push generated files
         run: |
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
-          git add generated_strings
+          git add generated_strings || echo "No new files to add"
           git commit -m "Update generated strings" || echo "No changes to commit"
           git push
         env:

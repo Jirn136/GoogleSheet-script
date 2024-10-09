@@ -6,8 +6,8 @@ on:
       sheet_id:
         description: 'Enter the Google Sheets ID'
         required: true
-      credentials_json:
-        description: 'Enter the credentials JSON directly (single line or escaped)'
+      creds_path:
+        description: 'Enter the path to the creds.json file (e.g., scripts/creds.json)'
         required: true
       range_name:
         description: 'Enter the range of the Google Sheet (e.g., Sheet1!A:F)'
@@ -39,4 +39,4 @@ jobs:
 
       - name: Run String Updater Script
         run: |
-          ./scripts/strings_updater.sh "${{ github.event.inputs.sheet_id }}" "${{ github.event.inputs.credentials_json }}" "${{ github.event.inputs.range_name }}"
+          ./scripts/strings_updater.sh "${{ github.event.inputs.sheet_id }}" "${{ github.event.inputs.creds_path }}" "${{ github.event.inputs.range_name }}"

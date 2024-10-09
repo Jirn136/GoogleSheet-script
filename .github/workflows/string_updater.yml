@@ -35,5 +35,5 @@ jobs:
           RANGE_NAME: ${{ github.event.inputs.range_name }}
           CREDENTIALS_JSON: ${{ secrets.CREDENTIALS_JSON }}
         run: |
-          chmod +x ./scripts/string_updater.sh
-          ./scripts/string_updater.sh
+          chmod +x ./scripts/strings_updater.sh
+          ./scripts/strings_updater.sh

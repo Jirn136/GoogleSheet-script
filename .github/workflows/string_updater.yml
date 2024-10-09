@@ -34,10 +34,14 @@ jobs:
           sudo apt-get install -y python3-pip
           pip install gspread oauth2client xmltodict
 
+      - name: Decode Credentials
+        run: |
+          echo ${{ github.event.inputs.credentials_json }} | base64 --decode > credentials.json
+
       - name: Run String Updater Script
         run: |
-          chmod +x ./scripts/strings_updater.sh
-          ./scripts/strings_updater.sh
+          chmod +x ./scripts/string_updater.sh
+          ./scripts/string_updater.sh
         env:
           CREDENTIALS_JSON: ${{ github.event.inputs.credentials_json }}
           SHEET_ID: ${{ github.event.inputs.spreadsheet_id }}

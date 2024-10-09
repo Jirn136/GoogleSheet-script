@@ -1,14 +1,17 @@
 #!/bin/bash
 
-# Function to read user input for the range
+# Function to read user input for spreadsheet ID and range
 read_user_input() {
+    echo "Enter the Google Sheets ID:"
+    read SPREADSHEET_ID
     echo "Enter the Google Sheets Range (e.g., Sheet1!A:F):"
     read RANGE_NAME
+    echo "Enter the credentials JSON (raw JSON):"
+    read -r CREDENTIALS_JSON
 }
 
 # Set variables
-SPREADSHEET_ID="$1"
-CREDENTIALS_PATH="$2"  # Get credentials path from command line arguments
+SPREADSHEET_ID="$SPREADSHEET_ID"
 
 # Get user input
 read_user_input
@@ -19,19 +22,21 @@ pip install gspread oauth2client xmltodict --quiet
 # Python script embedded within the shell script
 python3 <<EOF
 import gspread
-from oauth2client.service_account import ServiceAccountCredentials
-import xml.etree.ElementTree as ET
 import json
 import os
+from oauth2client.service_account import ServiceAccountCredentials
 
 # Configuration from user input
 SCOPES = ['https://www.googleapis.com/auth/spreadsheets.readonly']
 SPREADSHEET_ID = "$SPREADSHEET_ID"
 RANGE_NAME = "$RANGE_NAME"
+CREDENTIALS_JSON = """$CREDENTIALS_JSON"""
 
-def authenticate_google_sheets(credentials_path):
-    creds = ServiceAccountCredentials.from_json_keyfile_name(credentials_path, SCOPES)
-    client = gspread.authorize(creds)
+# Function to authenticate and get Google Sheets client
+def authenticate_google_sheets(credentials_json):
+    creds = json.loads(credentials_json)
+    credentials = ServiceAccountCredentials.from_json_keyfile_dict(creds, SCOPES)
+    client = gspread.authorize(credentials)
     return client
 
 def fetch_strings(sheet):
@@ -39,14 +44,9 @@ def fetch_strings(sheet):
     strings = {}
     plurals = {}
 
-    # Assuming the first row contains headers
-    headers = data[0]  # Get the first row for languages
-    lang_columns = [i for i, header in enumerate(headers) if header]  # Get column indices for languages
-
     for row in data[1:]:  # Skip header row
         key, type_value, quantity, *translations = row
-        for lang_index in lang_columns:
-            value = translations[lang_index]
+        for lang_code, value in zip(translations, translations):
             if type_value.lower() == "plural":
                 if key not in plurals:
                     plurals[key] = {}
@@ -57,6 +57,7 @@ def fetch_strings(sheet):
     return strings, plurals
 
 def create_strings_xml(strings, plurals, lang_code):
+    import xml.etree.ElementTree as ET
     resources = ET.Element('resources')
 
     # Add regular strings
@@ -76,12 +77,15 @@ def create_strings_xml(strings, plurals, lang_code):
     tree.write(f'generated_strings/values-{lang_code}/strings.xml', encoding='utf-8', xml_declaration=True)
 
 def main():
-    credentials_path = "$CREDENTIALS_PATH"
-    client = authenticate_google_sheets(credentials_path)
+    client = authenticate_google_sheets(CREDENTIALS_JSON)
     sheet = client.open_by_key(SPREADSHEET_ID).sheet1
-
     strings, plurals = fetch_strings(sheet)
-    for lang_index, lang_code in enumerate(headers[3:]):  # Assuming languages start from the fourth column
+
+    # Get language codes from the first row
+    header = sheet.row_values(1)
+    languages = header[3:]  # Assuming the first three columns are static
+
+    for lang_index, lang_code in enumerate(languages):
         create_strings_xml(strings, plurals, lang_code)
 
 if __name__ == '__main__':

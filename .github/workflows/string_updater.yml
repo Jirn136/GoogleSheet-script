@@ -1,23 +1,17 @@
-name: Update Strings from Google Sheets
+name: String Updater
 
 on:
-  workflow_dispatch:
-    inputs:
-      spreadsheet_id:
-        description: 'The ID of the Google Spreadsheet'
-        required: true
-        default: ''
-      range_name:
-        description: 'The Google Sheets Range (e.g., Sheet1!A:F)'
-        required: true
-        default: ''
+  push:
+    branches:
+      - main  # Adjust this to your target branch
+  workflow_dispatch:  # Allows manual triggering of the workflow
 
 jobs:
   update_strings:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repository
+      - name: Checkout code
         uses: actions/checkout@v2
 
       - name: Set up Python
@@ -27,13 +21,19 @@ jobs:
 
       - name: Install dependencies
         run: |
-          pip install gspread oauth2client xmltodict
+          pip install gspread oauth2client xmltodict --quiet
 
       - name: Run string updater script
-        env:
-          SPREADSHEET_ID: ${{ github.event.inputs.spreadsheet_id }}
-          RANGE_NAME: ${{ github.event.inputs.range_name }}
-          CREDENTIALS_JSON: ${{ secrets.CREDENTIALS_JSON }}
         run: |
           chmod +x ./scripts/strings_updater.sh
           ./scripts/strings_updater.sh
+
+      - name: Commit and push generated files
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add generated_strings
+          git commit -m "Update generated strings" || echo "No changes to commit"
+          git push
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # Automatically provided by GitHub Actions

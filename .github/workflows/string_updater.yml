@@ -1,43 +1,44 @@
 name: String Updater
 
 on:
-  push:
-    branches:
-      - main  # Adjust this to your target branch
-  workflow_dispatch:  # Allows manual triggering of the workflow
+  workflow_dispatch:
+    inputs:
+      spreadsheet_id:
+        description: 'Google Sheets ID'
+        required: true
+        default: ''
+      credentials_json:
+        description: 'Base64 encoded credentials JSON'
+        required: true
+        default: ''
+      range_name:
+        description: 'Google Sheets Range (e.g., Sheet1!A:F)'
+        required: true
+        default: 'Sheet1!A:F'
 
 jobs:
   update_strings:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout code
+      - name: Checkout Repository
         uses: actions/checkout@v2
 
-      - name: Set up Python
+      - name: Set Up Python
         uses: actions/setup-python@v2
         with:
           python-version: '3.x'
 
       - name: Install dependencies
         run: |
-          pip install gspread oauth2client xmltodict --quiet
+          sudo apt-get install -y python3-pip
+          pip install gspread oauth2client xmltodict
 
-      - name: Run string updater script
+      - name: Run String Updater Script
         run: |
           chmod +x ./scripts/strings_updater.sh
           ./scripts/strings_updater.sh
-
-      - name: Ensure generated_strings directory exists
-        run: |
-          mkdir -p generated_strings  # Create the directory if it doesn't exist
-
-      - name: Commit and push generated files
-        run: |
-          git config --local user.email "action@github.com"
-          git config --local user.name "GitHub Action"
-          git add generated_strings || echo "No new files to add"
-          git commit -m "Update generated strings" || echo "No changes to commit"
-          git push
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # Automatically provided by GitHub Actions
+          CREDENTIALS_JSON: ${{ github.event.inputs.credentials_json }}
+          SHEET_ID: ${{ github.event.inputs.spreadsheet_id }}
+          RANGE_NAME: ${{ github.event.inputs.range_name }}

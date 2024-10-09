@@ -16,12 +16,22 @@ if [ -z "$CREDENTIALS_JSON" ]; then
     exit 1
 fi
 
+if [ -z "$LANGUAGES" ]; then
+    echo "Error: LANGUAGES is not set."
+    exit 1
+fi
+
+if [ -z "$LANGUAGE_COLUMNS" ]; then
+    echo "Error: LANGUAGE_COLUMNS is not set."
+    exit 1
+fi
+
 # Decode credentials from the environment variable
 echo "$CREDENTIALS_JSON" | base64 --decode > credentials.json
 
-# Define languages and their corresponding columns as environment variables
-LANGUAGES=("en" "de" "fr")  # Update this array with your desired languages
-LANGUAGE_COLUMNS=(3 4 5)     # Update this array with the column numbers corresponding to the languages
+# Convert the space-separated inputs to arrays
+LANGUAGES=($LANGUAGES)
+LANGUAGE_COLUMNS=($LANGUAGE_COLUMNS)
 
 # Install required dependencies if not installed
 pip install gspread oauth2client xmltodict --quiet
@@ -37,8 +47,8 @@ import os
 SCOPES = ['https://www.googleapis.com/auth/spreadsheets.readonly']
 SPREADSHEET_ID = "$SPREADSHEET_ID"
 RANGE_NAME = "$RANGE_NAME"
-LANGUAGES = ${LANGUAGES[@]}
-LANGUAGE_COLUMNS = ${LANGUAGE_COLUMNS[@]}
+LANGUAGES = "${LANGUAGES[@]}".split()
+LANGUAGE_COLUMNS = list(map(int, "${LANGUAGE_COLUMNS[@]}".split()))
 
 def authenticate_google_sheets(credentials_path):
     creds = ServiceAccountCredentials.from_json_keyfile_name(credentials_path, SCOPES)
@@ -72,27 +82,4 @@ def create_strings_xml(strings, plurals, lang_code):
         string_elem.text = value
 
     # Add plural strings
-    for key, quantities in plurals.items():
-        plural_elem = ET.SubElement(resources, 'plurals', name=key)
-        for quantity, value in quantities.items():
-            item_elem = ET.SubElement(plural_elem, 'item', quantity=quantity)
-            item_elem.text = value
-
-    os.makedirs(f"android/res/values-{lang_code}", exist_ok=True)
-    tree = ET.ElementTree(resources)
-    tree.write(f'android/res/values-{lang_code}/strings.xml', encoding='utf-8', xml_declaration=True)
-
-def main():
-    credentials_path = "credentials.json"
-    client = authenticate_google_sheets(credentials_path)
-    sheet = client.open_by_key(SPREADSHEET_ID).sheet1
-
-    for lang_index, lang_code in enumerate(LANGUAGES):
-        strings, plurals = fetch_strings(sheet, LANGUAGE_COLUMNS[lang_index] - 1)  # Adjust for column offset
-        create_strings_xml(strings, plurals, lang_code)
-
-if __name__ == '__main__':
-    main()
-EOF
-
-echo "String files have been generated based on your preferences."
+    for key, quantities in plurals.items

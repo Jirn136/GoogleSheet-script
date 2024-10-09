@@ -6,8 +6,8 @@ read_user_input() {
     read SPREADSHEET_ID
     echo "Enter the Google Sheets Range (e.g., Sheet1!A:F):"
     read RANGE_NAME
-    echo "Enter the credentials JSON (base64 encoded):"
-    read CREDENTIALS_JSON
+    echo "Enter the path to the credentials JSON file (e.g., ./credentials.json):"
+    read CREDENTIALS_PATH
     echo "Enter the languages you want to generate files for (space-separated, e.g., en de fr):"
     read -a LANGUAGES
     echo "Enter the column numbers for each language (space-separated, e.g., 3 4 5):"
@@ -16,9 +16,6 @@ read_user_input() {
 
 # Get user input
 read_user_input
-
-# Decode credentials from the base64 encoded input
-echo $CREDENTIALS_JSON | base64 --decode > credentials.json
 
 # Install required dependencies if not installed
 pip install gspread oauth2client xmltodict --quiet
@@ -76,12 +73,13 @@ def create_strings_xml(strings, plurals, lang_code):
             item_elem = ET.SubElement(plural_elem, 'item', quantity=quantity)
             item_elem.text = value
 
-    os.makedirs(f"android/res/values-{lang_code}", exist_ok=True)
+    output_dir = f"res/values-{lang_code}"
+    os.makedirs(output_dir, exist_ok=True)
     tree = ET.ElementTree(resources)
-    tree.write(f'android/res/values-{lang_code}/strings.xml', encoding='utf-8', xml_declaration=True)
+    tree.write(f'{output_dir}/strings.xml', encoding='utf-8', xml_declaration=True)
 
 def main():
-    credentials_path = "credentials.json"
+    credentials_path = "$CREDENTIALS_PATH"
     client = authenticate_google_sheets(credentials_path)
     sheet = client.open_by_key(SPREADSHEET_ID).sheet1
 
@@ -93,4 +91,4 @@ if __name__ == '__main__':
     main()
 EOF
 
-echo "Android string files have been generated based on your preferences."
+echo "String files have been generated in the 'res' directory based on your preferences."

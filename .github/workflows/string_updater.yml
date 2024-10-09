@@ -43,5 +43,5 @@ jobs:
           LANGUAGES: ${{ github.event.inputs.languages }}
           LANGUAGE_COLUMNS: ${{ github.event.inputs.language_columns }}
         run: |
-          chmod +x ./scripts/string_updater.sh
-          ./scripts/string_updater.sh
+          chmod +x ./scripts/strings_updater.sh
+          ./scripts/strings_updater.sh

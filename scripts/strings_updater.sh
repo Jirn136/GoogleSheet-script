@@ -1,37 +1,23 @@
 #!/bin/bash
 
-# Check if required environment variables are set
-if [ -z "$SPREADSHEET_ID" ]; then
-    echo "Error: SPREADSHEET_ID is not set."
-    exit 1
-fi
+# Function to read user input for languages and columns
+read_user_input() {
+    echo "Enter the Google Sheets Range (e.g., Sheet1!A:F):"
+    read RANGE_NAME
+    echo "Enter the languages you want to generate files for (space-separated, e.g., en de fr):"
+    read -a LANGUAGES
+    echo "Enter the column numbers for each language (space-separated, e.g., 3 4 5):"
+    read -a LANGUAGE_COLUMNS
+}
 
-if [ -z "$RANGE_NAME" ]; then
-    echo "Error: RANGE_NAME is not set."
-    exit 1
-fi
-
-if [ -z "$CREDENTIALS_JSON" ]; then
-    echo "Error: CREDENTIALS_JSON is not set."
-    exit 1
-fi
-
-if [ -z "$LANGUAGES" ]; then
-    echo "Error: LANGUAGES is not set."
-    exit 1
-fi
-
-if [ -z "$LANGUAGE_COLUMNS" ]; then
-    echo "Error: LANGUAGE_COLUMNS is not set."
-    exit 1
-fi
+# Set variables
+SPREADSHEET_ID="$SPREADSHEET_ID"
 
 # Decode credentials from the environment variable
-echo "$CREDENTIALS_JSON" | base64 --decode > credentials.json
+echo $CREDENTIALS_JSON | base64 --decode > credentials.json
 
-# Convert the space-separated inputs to arrays
-LANGUAGES=($LANGUAGES)
-LANGUAGE_COLUMNS=($LANGUAGE_COLUMNS)
+# Get user input
+read_user_input
 
 # Install required dependencies if not installed
 pip install gspread oauth2client xmltodict --quiet
@@ -43,12 +29,12 @@ from oauth2client.service_account import ServiceAccountCredentials
 import xml.etree.ElementTree as ET
 import os
 
-# Configuration from environment variables
+# Configuration from user input
 SCOPES = ['https://www.googleapis.com/auth/spreadsheets.readonly']
 SPREADSHEET_ID = "$SPREADSHEET_ID"
 RANGE_NAME = "$RANGE_NAME"
-LANGUAGES = "${LANGUAGES[@]}".split()
-LANGUAGE_COLUMNS = list(map(int, "${LANGUAGE_COLUMNS[@]}".split()))
+LANGUAGES = ${LANGUAGES[@]}
+LANGUAGE_COLUMNS = ${LANGUAGE_COLUMNS[@]}
 
 def authenticate_google_sheets(credentials_path):
     creds = ServiceAccountCredentials.from_json_keyfile_name(credentials_path, SCOPES)
@@ -82,4 +68,27 @@ def create_strings_xml(strings, plurals, lang_code):
         string_elem.text = value
 
     # Add plural strings
-    for key, quantities in plurals.items
+    for key, quantities in plurals.items():  # Fixed: added parentheses
+        plural_elem = ET.SubElement(resources, 'plurals', name=key)
+        for quantity, value in quantities.items():
+            item_elem = ET.SubElement(plural_elem, 'item', quantity=quantity)
+            item_elem.text = value
+
+    os.makedirs(f"android/res/values-{lang_code}", exist_ok=True)
+    tree = ET.ElementTree(resources)
+    tree.write(f'android/res/values-{lang_code}/strings.xml', encoding='utf-8', xml_declaration=True)
+
+def main():
+    credentials_path = "credentials.json"
+    client = authenticate_google_sheets(credentials_path)
+    sheet = client.open_by_key(SPREADSHEET_ID).sheet1
+
+    for lang_index, lang_code in enumerate(LANGUAGES):
+        strings, plurals = fetch_strings(sheet, LANGUAGE_COLUMNS[lang_index] - 1)  # Adjust for column offset
+        create_strings_xml(strings, plurals, lang_code)
+
+if __name__ == '__main__':
+    main()
+EOF
+
+echo "Android string files have been generated based on your preferences."

@@ -1,29 +1,23 @@
-name: String Updater
+name: Update Strings from Google Sheets
 
 on:
   workflow_dispatch:
     inputs:
       spreadsheet_id:
-        description: 'Google Sheets Spreadsheet ID'
+        description: 'The ID of the Google Spreadsheet'
         required: true
+        default: ''
       range_name:
-        description: 'Google Sheets Range (e.g., Sheet1!A:F)'
+        description: 'The Google Sheets Range (e.g., Sheet1!A:F)'
         required: true
-      credentials_json:
-        description: 'Base64 Encoded Credentials JSON'
-        required: true
-      languages:
-        description: 'Languages (space-separated, e.g., en de fr)'
-        required: true
-      language_columns:
-        description: 'Column numbers for each language (space-separated, e.g., 3 4 5)'
-        required: true
+        default: ''
 
 jobs:
-  generate-strings:
+  update_strings:
     runs-on: ubuntu-latest
+
     steps:
-      - name: Checkout code
+      - name: Checkout repository
         uses: actions/checkout@v2
 
       - name: Set up Python
@@ -35,13 +29,11 @@ jobs:
         run: |
           pip install gspread oauth2client xmltodict
 
-      - name: Run script to generate strings
+      - name: Run string updater script
         env:
           SPREADSHEET_ID: ${{ github.event.inputs.spreadsheet_id }}
           RANGE_NAME: ${{ github.event.inputs.range_name }}
-          CREDENTIALS_JSON: ${{ github.event.inputs.credentials_json }}
-          LANGUAGES: ${{ github.event.inputs.languages }}
-          LANGUAGE_COLUMNS: ${{ github.event.inputs.language_columns }}
+          CREDENTIALS_JSON: ${{ secrets.CREDENTIALS_JSON }}
         run: |
-          chmod +x ./scripts/strings_updater.sh
-          ./scripts/strings_updater.sh
+          chmod +x ./scripts/string_updater.sh
+          ./scripts/string_updater.sh

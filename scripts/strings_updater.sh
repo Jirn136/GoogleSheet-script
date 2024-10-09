@@ -1,22 +1,20 @@
 #!/bin/bash
 
-# Function to read user input for spreadsheet details
-read_user_input() {
-    echo "Enter the Google Sheets Range (e.g., Sheet1!A:F):"
-    read RANGE_NAME
-}
+# Usage: ./string_updater.sh <SHEET_ID> <CREDENTIALS_JSON> <RANGE_NAME>
 
-# Set variables
-SPREADSHEET_ID="$SHEET_ID"
+# Get user input from arguments
+SPREADSHEET_ID="$1"
+CREDENTIALS_JSON="$2"
+RANGE_NAME="$3"
 
-# Decode credentials from the environment variable
-echo "$CREDENTIALS_JSON" | base64 --decode > credentials.json
+# Write the credentials JSON to a file
+echo "$CREDENTIALS_JSON" > credentials.json
 
-# Get user input for the range name
-read_user_input
-
-# Install required dependencies if not installed
-pip install gspread oauth2client xmltodict --quiet
+# Check if the JSON is valid
+if ! python3 -c "import json; json.load(open('credentials.json'))"; then
+    echo "Invalid JSON structure in credentials.json"
+    exit 1
+fi
 
 # Python script embedded within the shell script
 python3 <<EOF
@@ -40,14 +38,10 @@ def fetch_strings(sheet):
     strings = {}
     plurals = {}
 
-    # Assuming the first row contains headers
-    languages = data[0][3:]  # Get language columns from the 4th column onward (zero-indexed)
-
-    for lang_index, lang_code in enumerate(languages):
-        for row in data[1:]:  # Skip header row
-            key, type_value, quantity, *translations = row
-            value = translations[lang_index]
-
+    for row in data[1:]:  # Skip header row
+        key, type_value, quantity, *translations = row
+        for lang_index, value in enumerate(translations):
+            lang_code = data[0][3 + lang_index]  # Get the language code from the first row
             if type_value.lower() == "plural":
                 if key not in plurals:
                     plurals[key] = {}
@@ -82,7 +76,10 @@ def main():
     sheet = client.open_by_key(SPREADSHEET_ID).sheet1
 
     strings, plurals = fetch_strings(sheet)
-    for lang_index, lang_code in enumerate(sheet.row_values(1)[3:]):  # Language codes from the header
+    
+    # Generate strings.xml for each language
+    for lang_index in range(len(sheet.row_values(1)) - 3):  # Skip first three columns
+        lang_code = sheet.row_values(1)[3 + lang_index]
         create_strings_xml(strings, plurals, lang_code)
 
 if __name__ == '__main__':

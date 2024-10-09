@@ -1,21 +1,27 @@
 #!/bin/bash
 
-# Function to read user input for spreadsheet details, languages, and columns
-read_user_input() {
-    echo "Enter the Google Spreadsheet ID:"
-    read SPREADSHEET_ID
-    echo "Enter the Google Sheets Range (e.g., Sheet1!A:F):"
-    read RANGE_NAME
-    echo "Enter the path to the credentials JSON file (e.g., ./credentials.json):"
-    read CREDENTIALS_PATH
-    echo "Enter the languages you want to generate files for (space-separated, e.g., en de fr):"
-    read -a LANGUAGES
-    echo "Enter the column numbers for each language (space-separated, e.g., 3 4 5):"
-    read -a LANGUAGE_COLUMNS
-}
+# Check if required environment variables are set
+if [ -z "$SPREADSHEET_ID" ]; then
+    echo "Error: SPREADSHEET_ID is not set."
+    exit 1
+fi
 
-# Get user input
-read_user_input
+if [ -z "$RANGE_NAME" ]; then
+    echo "Error: RANGE_NAME is not set."
+    exit 1
+fi
+
+if [ -z "$CREDENTIALS_JSON" ]; then
+    echo "Error: CREDENTIALS_JSON is not set."
+    exit 1
+fi
+
+# Decode credentials from the environment variable
+echo "$CREDENTIALS_JSON" | base64 --decode > credentials.json
+
+# Define languages and their corresponding columns as environment variables
+LANGUAGES=("en" "de" "fr")  # Update this array with your desired languages
+LANGUAGE_COLUMNS=(3 4 5)     # Update this array with the column numbers corresponding to the languages
 
 # Install required dependencies if not installed
 pip install gspread oauth2client xmltodict --quiet
@@ -25,10 +31,9 @@ python3 <<EOF
 import gspread
 from oauth2client.service_account import ServiceAccountCredentials
 import xml.etree.ElementTree as ET
-import json
 import os
 
-# Configuration from user input
+# Configuration from environment variables
 SCOPES = ['https://www.googleapis.com/auth/spreadsheets.readonly']
 SPREADSHEET_ID = "$SPREADSHEET_ID"
 RANGE_NAME = "$RANGE_NAME"
@@ -73,13 +78,12 @@ def create_strings_xml(strings, plurals, lang_code):
             item_elem = ET.SubElement(plural_elem, 'item', quantity=quantity)
             item_elem.text = value
 
-    output_dir = f"res/values-{lang_code}"
-    os.makedirs(output_dir, exist_ok=True)  # Ensure the directory exists
+    os.makedirs(f"android/res/values-{lang_code}", exist_ok=True)
     tree = ET.ElementTree(resources)
-    tree.write(f'{output_dir}/strings.xml', encoding='utf-8', xml_declaration=True)
+    tree.write(f'android/res/values-{lang_code}/strings.xml', encoding='utf-8', xml_declaration=True)
 
 def main():
-    credentials_path = "$CREDENTIALS_PATH"
+    credentials_path = "credentials.json"
     client = authenticate_google_sheets(credentials_path)
     sheet = client.open_by_key(SPREADSHEET_ID).sheet1
 
@@ -91,4 +95,4 @@ if __name__ == '__main__':
     main()
 EOF
 
-echo "String files have been generated in the 'res' directory based on your preferences."
+echo "String files have been generated based on your preferences."

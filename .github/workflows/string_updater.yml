@@ -3,46 +3,36 @@ name: String Updater
 on:
   workflow_dispatch:
     inputs:
-      spreadsheet_id:
-        description: 'Google Sheets ID'
+      sheet_id:
+        description: 'Enter the Google Sheets ID'
         required: true
-        default: ''
       credentials_json:
-        description: 'Base64 encoded credentials JSON'
+        description: 'Enter the credentials JSON directly (single line or escaped)'
         required: true
-        default: ''
       range_name:
-        description: 'Google Sheets Range (e.g., Sheet1!A:F)'
+        description: 'Enter the range of the Google Sheet (e.g., Sheet1!A:F)'
         required: true
-        default: 'Sheet1!A:F'
 
 jobs:
   update_strings:
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout Repository
+      - name: Checkout code
         uses: actions/checkout@v2
 
-      - name: Set Up Python
+      - name: Set up Python
         uses: actions/setup-python@v2
         with:
           python-version: '3.x'
 
       - name: Install dependencies
         run: |
-          sudo apt-get install -y python3-pip
           pip install gspread oauth2client xmltodict
 
-      - name: Decode Credentials
+      - name: Create generated_strings directory
         run: |
-          echo ${{ github.event.inputs.credentials_json }} | base64 --decode > credentials.json
+          mkdir -p generated_strings
 
       - name: Run String Updater Script
         run: |
-          chmod +x ./scripts/strings_updater.sh
-          ./scripts/strings_updater.sh
-        env:
-          CREDENTIALS_JSON: ${{ github.event.inputs.credentials_json }}
-          SHEET_ID: ${{ github.event.inputs.spreadsheet_id }}
-          RANGE_NAME: ${{ github.event.inputs.range_name }}
+          ./scripts/strings_updater.sh "${{ github.event.inputs.sheet_id }}" "${{ github.event.inputs.credentials_json }}" "${{ github.event.inputs.range_name }}"

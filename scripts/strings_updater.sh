@@ -1,26 +1,27 @@
 #!/bin/bash
 
-# Usage: ./string_updater.sh <SHEET_ID> <CREDENTIALS_JSON> <RANGE_NAME>
+# Function to read user input for the range
+read_user_input() {
+    echo "Enter the Google Sheets Range (e.g., Sheet1!A:F):"
+    read RANGE_NAME
+}
 
-# Get user input from arguments
+# Set variables
 SPREADSHEET_ID="$1"
-CREDENTIALS_JSON="$2"
-RANGE_NAME="$3"
+CREDENTIALS_PATH="$2"  # Get credentials path from command line arguments
 
-# Write the credentials JSON to a file
-echo "$CREDENTIALS_JSON" > credentials.json
+# Get user input
+read_user_input
 
-# Check if the JSON is valid
-if ! python3 -c "import json; json.load(open('credentials.json'))"; then
-    echo "Invalid JSON structure in credentials.json"
-    exit 1
-fi
+# Install required dependencies if not installed
+pip install gspread oauth2client xmltodict --quiet
 
 # Python script embedded within the shell script
 python3 <<EOF
 import gspread
 from oauth2client.service_account import ServiceAccountCredentials
 import xml.etree.ElementTree as ET
+import json
 import os
 
 # Configuration from user input
@@ -38,10 +39,14 @@ def fetch_strings(sheet):
     strings = {}
     plurals = {}
 
+    # Assuming the first row contains headers
+    headers = data[0]  # Get the first row for languages
+    lang_columns = [i for i, header in enumerate(headers) if header]  # Get column indices for languages
+
     for row in data[1:]:  # Skip header row
         key, type_value, quantity, *translations = row
-        for lang_index, value in enumerate(translations):
-            lang_code = data[0][3 + lang_index]  # Get the language code from the first row
+        for lang_index in lang_columns:
+            value = translations[lang_index]
             if type_value.lower() == "plural":
                 if key not in plurals:
                     plurals[key] = {}
@@ -71,15 +76,12 @@ def create_strings_xml(strings, plurals, lang_code):
     tree.write(f'generated_strings/values-{lang_code}/strings.xml', encoding='utf-8', xml_declaration=True)
 
 def main():
-    credentials_path = "credentials.json"
+    credentials_path = "$CREDENTIALS_PATH"
     client = authenticate_google_sheets(credentials_path)
     sheet = client.open_by_key(SPREADSHEET_ID).sheet1
 
     strings, plurals = fetch_strings(sheet)
-    
-    # Generate strings.xml for each language
-    for lang_index in range(len(sheet.row_values(1)) - 3):  # Skip first three columns
-        lang_code = sheet.row_values(1)[3 + lang_index]
+    for lang_index, lang_code in enumerate(headers[3:]):  # Assuming languages start from the fourth column
         create_strings_xml(strings, plurals, lang_code)
 
 if __name__ == '__main__':

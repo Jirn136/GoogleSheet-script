@@ -1,43 +1,39 @@
-name: Update Android Strings
+name: Generate Strings
 
 on:
-  push:
-    branches:
-      - main
-  workflow_dispatch: # Allows you to manually trigger the workflow
+  workflow_dispatch:
+    inputs:
+      spreadsheet_id:
+        description: 'Google Sheets Spreadsheet ID'
+        required: true
+      range_name:
+        description: 'Google Sheets Range (e.g., Sheet1!A:F)'
+        required: true
+      credentials_json:
+        description: 'Base64 Encoded Credentials JSON'
+        required: true
 
 jobs:
-  update-strings:
+  generate-strings:
     runs-on: ubuntu-latest
-    
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
-      
+        uses: actions/checkout@v2
+
       - name: Set up Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v2
         with:
           python-version: '3.x'
-      
-      - name: Install Python dependencies
+
+      - name: Install dependencies
         run: |
-          python -m pip install --upgrade pip
           pip install gspread oauth2client xmltodict
-      
-      - name: Run strings updater script
+
+      - name: Run script to generate strings
         env:
-          SPREADSHEET_ID: ${{ secrets.SPREADSHEET_ID }}
-          CREDENTIALS_JSON: ${{ secrets.CREDENTIALS_JSON }}
+          SPREADSHEET_ID: ${{ github.event.inputs.spreadsheet_id }}
+          RANGE_NAME: ${{ github.event.inputs.range_name }}
+          CREDENTIALS_JSON: ${{ github.event.inputs.credentials_json }}
         run: |
-          chmod +x scripts/strings_updater.sh
-          bash scripts/strings_updater.sh
-      
-      - name: Commit and push generated files
-        run: |
-          git config --global user.name "github-actions[bot]"
-          git config --global user.email "github-actions[bot]@users.noreply.github.com"
-          git add android/res/
-          git commit -m "Update Android strings"
-          git push
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          chmod +x ./generate_strings.sh
+          ./generate_strings.sh

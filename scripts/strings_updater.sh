@@ -31,12 +31,21 @@ generate_strings_xml() {
   
   # Read each row and generate strings or plurals
   echo "$data" | jq -r '.[] | @csv' | while IFS=',' read -r key type quantity en other; do
-    if [ "$type" == "\"plural\"" ]; then
-      echo "  <plurals name=${key}>"
-      echo "    <item quantity=\"${quantity}\">${en}</item>"
+    # Strip quotes from the variables
+    key=$(echo "$key" | tr -d '"')
+    type=$(echo "$type" | tr -d '"')
+    quantity=$(echo "$quantity" | tr -d '"')
+    en=$(echo "$en" | tr -d '"')
+
+    # Log the processed strings
+    echo "Processing: Key: $key, Type: $type, Quantity: $quantity, Value: $en"
+
+    if [ "$type" == "string" ]; then
+      echo "  <string name=\"$key\">$en</string>"
+    elif [ "$type" == "plural" ]; then
+      echo "  <plurals name=\"$key\">"
+      echo "    <item quantity=\"$quantity\">$en</item>"
       echo "  </plurals>"
-    else
-      echo "  <string name=${key}>${en}</string>"
     fi
   done
 
@@ -68,6 +77,10 @@ main() {
 
   # Generate the strings.xml file
   generate_strings_xml "$SHEET_DATA" > res/values/strings.xml
+
+  # Log the contents of the generated strings.xml file
+  echo "Generated strings.xml content:"
+  cat res/values/strings.xml
 }
 
 main

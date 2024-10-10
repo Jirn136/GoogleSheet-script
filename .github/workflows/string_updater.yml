@@ -1,39 +1,43 @@
-name: String Updater
+name: Generate Strings XML
 
 on:
   workflow_dispatch:
     inputs:
-      spreadsheet_id:
-        description: 'Google Sheets ID'
+      sheet_id:
+        description: 'Google Sheet ID'
         required: true
-      range_name:
-        description: 'Google Sheets Range (e.g., Sheet1!A:F)'
+        default: ''
+      sheet_range:
+        description: 'Google Sheet Range (e.g., Sheet1!A:E)'
         required: true
-      credentials_json:
-        description: 'Credentials JSON (raw JSON)'
-        required: true
+        default: ''
 
 jobs:
-  update_strings:
+  generate-strings:
     runs-on: ubuntu-latest
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v2
 
-      - name: Set up Python
-        uses: actions/setup-python@v2
-        with:
-          python-version: '3.8'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Google credentials
+        env:
+          GOOGLE_CREDENTIALS_JSON: ${{ secrets.GOOGLE_CREDENTIALS }}
+        run: |
+          echo "$GOOGLE_CREDENTIALS_JSON" > credentials.json
 
       - name: Install dependencies
         run: |
-          pip install gspread oauth2client xmltodict
+          sudo apt-get update
+          sudo apt-get install -y jq curl
 
-      - name: Run string updater script
-        env:
-          SPREADSHEET_ID: ${{ github.event.inputs.spreadsheet_id }}
-          RANGE_NAME: ${{ github.event.inputs.range_name }}
-          CREDENTIALS_JSON: ${{ github.event.inputs.credentials_json }}
+      - name: Generate strings.xml
+        run: ./generate_strings.sh ${{ github.event.inputs.sheet_id }} "${{ github.event.inputs.sheet_range }}"
+
+      - name: Commit and push changes
         run: |
-          chmod +x ./scripts/strings_updater.sh
-          ./scripts/strings_updater.sh
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git add .
+          git commit -m "Automated update of strings.xml" || echo "No changes to commit"
+          git push

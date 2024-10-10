@@ -49,6 +49,9 @@ main() {
     exit 1
   fi
 
+  # Create the directory if it doesn't exist
+  mkdir -p res/values
+
   # Get access token
   ACCESS_TOKEN=$(get_access_token)
   if [ -z "$ACCESS_TOKEN" ]; then

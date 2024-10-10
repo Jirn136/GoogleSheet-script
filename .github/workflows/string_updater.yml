@@ -1,92 +1,46 @@
-name: Update Strings from Google Sheets
+name: Generate Strings XML
 
 on:
-  workflow_dispatch: # Allows manual triggering of the workflow
+  workflow_dispatch:
+    inputs:
+      sheet_id:
+        description: 'Google Sheet ID'
+        required: true
+        default: ''
+      sheet_range:
+        description: 'Google Sheet Range (e.g., Sheet1!A:E)'
+        required: true
+        default: ''
 
 jobs:
-  update-strings:
+  generate-strings:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout Code
-        uses: actions/checkout@v2
+      - name: Checkout code
+        uses: actions/checkout@v3
 
-      - name: Install Dependencies
+      - name: Set up Google credentials
+        env:
+          GOOGLE_CREDENTIALS_JSON: ${{ secrets.GOOGLE_CREDENTIALS }}
         run: |
+          echo "$GOOGLE_CREDENTIALS_JSON" > credentials.json
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
           sudo apt-get install -y jq curl
 
-      - name: Retrieve Strings from Google Sheets
-        env:
-          GOOGLE_SHEET_CREDENTIALS: ${{ secrets.GOOGLE_SHEET_CREDENTIALS }}
+      - name: Grant execute permission to script
+        run: chmod +x ./scripts/strings_updater.sh
+
+      - name: Generate strings.xml
+        run: ./scripts/strings_updater.sh ${{ github.event.inputs.sheet_id }} "${{ github.event.inputs.sheet_range }}"
+
+      - name: Commit and push changes
         run: |
-          # Save the credentials to a file
-          echo "$GOOGLE_SHEET_CREDENTIALS" > creds.json
-
-          # Get user inputs for sheet ID and range
-          read -p "Enter the Google Sheet ID: " SHEET_ID
-          read -p "Enter the range (e.g., 'Sheet1!A:D'): " RANGE
-
-          # Request an access token using the service account
-          # Create a JWT for the service account
-          HEADER='{
-            "alg": "RS256",
-            "typ": "JWT"
-          }'
-
-          HEADER_BASE64=$(echo -n "$HEADER" | base64 | tr '+/' '-_' | tr -d '=')
-          
-          # Create the claim
-          NOW=$(date +%s)
-          EXPIRY=$((NOW + 3600))
-
-          CLAIM='{
-            "iss": "'$(jq -r '.client_email' creds.json)'",
-            "scope": "https://www.googleapis.com/auth/spreadsheets.readonly",
-            "aud": "https://oauth2.googleapis.com/token",
-            "iat": '$NOW',
-            "exp": '$EXPIRY'
-          }'
-
-          CLAIM_BASE64=$(echo -n "$CLAIM" | base64 | tr '+/' '-_' | tr -d '=')
-
-          # Sign the JWT
-          SIGNATURE=$(echo -n "$HEADER_BASE64.$CLAIM_BASE64" | openssl dgst -sha256 -sign <(echo -n "$(jq -r '.private_key' creds.json | sed 's/\\n/\n/g')") | base64 | tr '+/' '-_' | tr -d '=')
-
-          JWT="$HEADER_BASE64.$CLAIM_BASE64.$SIGNATURE"
-
-          # Request access token
-          ACCESS_TOKEN=$(curl -s -X POST \
-            -H "Content-Type: application/x-www-form-urlencoded" \
-            -d "assertion=$JWT" \
-            "https://oauth2.googleapis.com/token")
-
-          # Extract the access token from the response
-          ACCESS_TOKEN=$(echo "$ACCESS_TOKEN" | jq -r '.access_token')
-
-          # Use the access token to retrieve data from Google Sheets
-          SHEET_DATA=$(curl -s -X GET \
-            "https://sheets.googleapis.com/v4/spreadsheets/$SHEET_ID/values/$RANGE?access_token=$ACCESS_TOKEN")
-
-          # Log the raw response for debugging
-          echo "Raw response from Google Sheets API: $SHEET_DATA"
-
-          # Process the sheet data and generate strings.xml
-          echo "<?xml version=\"1.0\" encoding=\"utf-8\"?>" > res/values/strings.xml
-          echo "<resources>" >> res/values/strings.xml
-
-          # Process the data into strings.xml format
-          echo "$SHEET_DATA" | jq -r '.values[] | select(length > 0) | [.[0], .[1], .[2], .[3]] | @tsv' | while IFS=$'\t' read -r key type quantity value; do
-              if [[ "$type" == "string" ]]; then
-                  echo "  <string name=\"$key\">$value</string>" >> res/values/strings.xml
-              elif [[ "$type" == "plural" ]]; then
-                  echo "  <plurals name=\"$key\">" >> res/values/strings.xml
-                  echo "    <item quantity=\"one\">${value}</item>" >> res/values/strings.xml
-                  echo "    <item quantity=\"other\">${value}</item>" >> res/values/strings.xml
-                  echo "  </plurals>" >> res/values/strings.xml
-              fi
-          done
-
-          echo "</resources>" >> res/values/strings.xml
-
-          # Display generated strings.xml
-          cat res/values/strings.xml
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git add .
+          git commit -m "Automated update of strings.xml" || echo "No changes to commit"
+          git push

@@ -31,6 +31,9 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y jq curl
 
+      - name: Grant execute permission to script
+        run: chmod +x ./scripts/strings_updater.sh
+
       - name: Generate strings.xml
         run: ./scripts/strings_updater.sh ${{ github.event.inputs.sheet_id }} "${{ github.event.inputs.sheet_range }}"
 

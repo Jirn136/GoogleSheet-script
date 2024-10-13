@@ -2,6 +2,14 @@ import gspread
 from oauth2client.service_account import ServiceAccountCredentials
 import os
 import xml.etree.ElementTree as ET
+import sys
+
+# Get the sheet name from command-line argument
+if len(sys.argv) != 2:
+    print("Usage: python fetch_strings.py <GOOGLE_SHEET_NAME>")
+    sys.exit(1)
+
+sheet_name = sys.argv[1]
 
 # Set up credentials and Google Sheets access
 scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
@@ -9,7 +17,7 @@ credentials = ServiceAccountCredentials.from_json_keyfile_name('path/to/credenti
 client = gspread.authorize(credentials)
 
 # Open your sheet
-spreadsheet = client.open('YOUR_GOOGLE_SHEET_NAME')
+spreadsheet = client.open(sheet_name)
 sheet = spreadsheet.sheet1
 
 # Fetch all records

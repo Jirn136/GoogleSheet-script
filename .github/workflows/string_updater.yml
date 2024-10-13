@@ -23,11 +23,15 @@ jobs:
         python -m pip install --upgrade pip
         pip install gspread oauth2client
 
+    - name: Set up Google credentials
+      run: |
+        echo "${{ secrets.GOOGLE_SHEET_CREDENTIALS }}" > ${{ github.workspace }}/google-credentials.json
+
     - name: Fetch and generate strings.xml files
       env:
-        GOOGLE_APPLICATION_CREDENTIALS: ${{ secrets.GOOGLE_SHEET_CREDENTIALS }}
+        GOOGLE_APPLICATION_CREDENTIALS: ${{ github.workspace }}/google-credentials.json
       run: |
-        python ${{ github.workspace }}/scripts/fetch_strings.py "${{ secrets.GOOGLE_SHEET_NAME }}"
+        python ${{ github.workspace }}/scripts/fetch_strings.py "${{ secrets.GOOGLE_SHEET_ID }}"
 
     - name: Commit and push changes
       run: |

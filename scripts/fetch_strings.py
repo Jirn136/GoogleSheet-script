@@ -1,75 +1,28 @@
+import sys
 import gspread
 from oauth2client.service_account import ServiceAccountCredentials
-import os
-import xml.etree.ElementTree as ET
-import sys
 
-# Get the sheet ID from the command-line argument
-if len(sys.argv) != 2:
-    print("Usage: python fetch_strings.py <GOOGLE_SHEET_ID>")
-    sys.exit(1)
+def fetch_strings(sheet_id):
+    # Use credentials and authenticate
+    scope = ['https://spreadsheets.google.com/feeds', 'https://www.googleapis.com/auth/drive']
+    creds = ServiceAccountCredentials.from_json_keyfile_name('google-credentials.json', scope)
+    client = gspread.authorize(creds)
 
-sheet_id = sys.argv[1]
+    # Open the spreadsheet by ID and fetch the first worksheet
+    sheet = client.open_by_key(sheet_id)
+    worksheet = sheet.get_worksheet(0)  # Get the first worksheet
 
-# Set up credentials and Google Sheets access
-scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
-credentials = ServiceAccountCredentials.from_json_keyfile_name('path/to/credentials.json', scope)
-client = gspread.authorize(credentials)
+    # Fetch all records from the worksheet
+    data = worksheet.get_all_records()
 
-# Open your sheet using the sheet ID
-spreadsheet = client.open_by_key(sheet_id)
-sheet = spreadsheet.sheet1
+    # Process the data (you can expand this as needed)
+    for row in data:
+        print(f"ID: {row['ID']}, Type: {row['Type']}, Quantity: {row.get('Quantity', 'N/A')}, Translation: {row['en']}")
 
-# Fetch all records
-records = sheet.get_all_records()
+if __name__ == '__main__':
+    if len(sys.argv) != 2:
+        print("Usage: python fetch_strings.py <sheet_id>")
+        sys.exit(1)
 
-# Directory to store generated files
-base_dir = 'app/src/main/res'
-
-# Process each row and generate strings.xml files
-def generate_string_files(records):
-    translations = {}
-    
-    for record in records:
-        string_id = record['id']
-        string_type = record['type']
-        quantity = record.get('quantity', '')
-        translations_per_lang = {key: value for key, value in record.items() if key not in ['id', 'type', 'quantity']}
-
-        for lang, translation in translations_per_lang.items():
-            if lang not in translations:
-                translations[lang] = {}
-            if string_type == 'string':
-                translations[lang][string_id] = translation
-            elif string_type == 'plural':
-                if string_id not in translations[lang]:
-                    translations[lang][string_id] = {}
-                translations[lang][string_id][quantity] = translation
-
-    for lang, strings in translations.items():
-        generate_xml_file(lang, strings)
-
-def generate_xml_file(language, strings):
-    # Determine the path
-    if language == 'en':
-        path = os.path.join(base_dir, 'values', 'strings.xml')
-    else:
-        path = os.path.join(base_dir, f'values-{language}', 'strings.xml')
-
-    os.makedirs(os.path.dirname(path), exist_ok=True)
-    
-    resources = ET.Element("resources")
-
-    for string_id, value in strings.items():
-        if isinstance(value, dict):  # It's a plural
-            plural_element = ET.SubElement(resources, "plurals", name=string_id)
-            for quantity, translation in value.items():
-                ET.SubElement(plural_element, "item", quantity=quantity).text = translation
-        else:  # It's a simple string
-            string_element = ET.SubElement(resources, "string", name=string_id)
-            string_element.text = value
-
-    tree = ET.ElementTree(resources)
-    tree.write(path, encoding='utf-8', xml_declaration=True)
-
-generate_string_files(records)
+    sheet_id = sys.argv[1]
+    fetch_strings(sheet_id)

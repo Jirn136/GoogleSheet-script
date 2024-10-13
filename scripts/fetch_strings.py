@@ -1,11 +1,24 @@
 import sys
 import gspread
+import json
+import os
 from oauth2client.service_account import ServiceAccountCredentials
+from io import StringIO
 
 def fetch_strings(sheet_id):
     # Use credentials and authenticate
     scope = ['https://spreadsheets.google.com/feeds', 'https://www.googleapis.com/auth/drive']
-    creds = ServiceAccountCredentials.from_json_keyfile_name('google-credentials.json', scope)
+    
+    # Load the credentials from the environment variable
+    creds_json = os.getenv('CREDENTIALS')
+    if creds_json is None:
+        print("No credentials found in environment variable 'CREDENTIALS'.")
+        sys.exit(1)
+
+    # Convert JSON string to file-like object
+    creds_io = StringIO(creds_json)
+    
+    creds = ServiceAccountCredentials.from_json_keyfile_like(creds_io, scope)
     client = gspread.authorize(creds)
 
     # Open the spreadsheet by ID and fetch the first worksheet

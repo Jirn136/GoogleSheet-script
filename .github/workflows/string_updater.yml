@@ -27,7 +27,7 @@ jobs:
       env:
         GOOGLE_APPLICATION_CREDENTIALS: ${{ secrets.GOOGLE_SHEET_CREDENTIALS }}
       run: |
-        python fetch_strings.py "${{ secrets.GOOGLE_SHEET_NAME }}"
+        python String-updater/scripts/fetch_strings.py "${{ secrets.GOOGLE_SHEET_NAME }}"
 
     - name: Commit and push changes
       run: |

@@ -1,9 +1,12 @@
 name: Update Translations
 
 on:
-  push:
-    branches:
-      - main
+  workflow_dispatch:
+    inputs:
+      sheet_id:
+        description: 'Enter the Google Sheet ID'
+        required: true
+        type: string
 
 jobs:
   update-translations:
@@ -23,15 +26,17 @@ jobs:
         python -m pip install --upgrade pip
         pip install gspread oauth2client
 
-    - name: Set up Google credentials
+    - name: Create Google credentials file
+      env:
+        GOOGLE_SHEET_CREDENTIALS: ${{ secrets.GOOGLE_SHEET_CREDENTIALS }}
       run: |
-        echo "${{ secrets.GOOGLE_SHEET_CREDENTIALS }}" > ${{ github.workspace }}/google-credentials.json
+        echo "${GOOGLE_SHEET_CREDENTIALS}" > ${{ github.workspace }}/google-credentials.json
 
     - name: Fetch and generate strings.xml files
       env:
         GOOGLE_APPLICATION_CREDENTIALS: ${{ github.workspace }}/google-credentials.json
       run: |
-        python ${{ github.workspace }}/scripts/fetch_strings.py "${{ secrets.GOOGLE_SHEET_ID }}"
+        python ${{ github.workspace }}/scripts/fetch_strings.py "${{ github.event.inputs.sheet_id }}"
 
     - name: Commit and push changes
       run: |

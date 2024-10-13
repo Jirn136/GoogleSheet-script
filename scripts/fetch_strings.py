@@ -4,20 +4,20 @@ import os
 import xml.etree.ElementTree as ET
 import sys
 
-# Get the sheet name from command-line argument
+# Get the sheet ID from the command-line argument
 if len(sys.argv) != 2:
-    print("Usage: python fetch_strings.py <GOOGLE_SHEET_NAME>")
+    print("Usage: python fetch_strings.py <GOOGLE_SHEET_ID>")
     sys.exit(1)
 
-sheet_name = sys.argv[1]
+sheet_id = sys.argv[1]
 
 # Set up credentials and Google Sheets access
 scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
 credentials = ServiceAccountCredentials.from_json_keyfile_name('path/to/credentials.json', scope)
 client = gspread.authorize(credentials)
 
-# Open your sheet
-spreadsheet = client.open(sheet_name)
+# Open your sheet using the sheet ID
+spreadsheet = client.open_by_key(sheet_id)
 sheet = spreadsheet.sheet1
 
 # Fetch all records

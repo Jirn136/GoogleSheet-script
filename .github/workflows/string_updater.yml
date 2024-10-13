@@ -1,46 +1,38 @@
-name: Generate Strings XML
+name: Update Translations
 
 on:
-  workflow_dispatch:
-    inputs:
-      sheet_id:
-        description: 'Google Sheet ID'
-        required: true
-        default: ''
-      sheet_range:
-        description: 'Google Sheet Range (e.g., Sheet1!A:E)'
-        required: true
-        default: ''
+  push:
+    branches:
+      - main
 
 jobs:
-  generate-strings:
+  update-translations:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
+    - name: Checkout code
+      uses: actions/checkout@v2
 
-      - name: Set up Google credentials
-        env:
-          GOOGLE_CREDENTIALS_JSON: ${{ secrets.GOOGLE_CREDENTIALS }}
-        run: |
-          echo "$GOOGLE_CREDENTIALS_JSON" > credentials.json
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.9'
 
-      - name: Install dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y jq curl
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install gspread oauth2client
 
-      - name: Grant execute permission to script
-        run: chmod +x ./scripts/strings_updater.sh
+    - name: Fetch and generate strings.xml files
+      env:
+        GOOGLE_APPLICATION_CREDENTIALS: ${{ secrets.GOOGLE_SHEET_CREDENTIALS }}
+      run: |
+        python fetch_strings.py
 
-      - name: Generate strings.xml
-        run: ./scripts/strings_updater.sh ${{ github.event.inputs.sheet_id }} "${{ github.event.inputs.sheet_range }}"
-
-      - name: Commit and push changes
-        run: |
-          git config --global user.name "github-actions[bot]"
-          git config --global user.email "github-actions[bot]@users.noreply.github.com"
-          git add .
-          git commit -m "Automated update of strings.xml" || echo "No changes to commit"
-          git push
+    - name: Commit and push changes
+      run: |
+        git config --local user.email "github-actions[bot]@users.noreply.github.com"
+        git config --local user.name "github-actions[bot]"
+        git add app/src/main/res/
+        git commit -m "Update translations from Google Sheet" || echo "No changes to commit"
+        git push

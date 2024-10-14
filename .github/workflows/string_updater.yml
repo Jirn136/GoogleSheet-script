@@ -108,40 +108,37 @@ jobs:
           done
 
           # Generate strings.xml for each language
-          for lang in "${!translations[@]}"; do
-              lang_code="${lang%%,*}"
-              id="${lang##*,}"
-
-              lang_dir="$VALUES_DIR/values-${lang_code}"
+          for lang in $(echo "${!translations[@]}" | awk -F, '{print $1}' | sort -u); do
+              lang_dir="$VALUES_DIR/values-${lang}"
               mkdir -p "$lang_dir"
               xml_file="$lang_dir/strings.xml"
 
-              # Start writing the XML if file does not exist
-              if [ ! -f "$xml_file" ]; then
-                  {
-                      echo '<?xml version="1.0" encoding="utf-8"?>'
-                      echo '<resources>'
-                  } > "$xml_file"
-              fi
+              # Start writing the XML
+              {
+                  echo '<?xml version="1.0" encoding="utf-8"?>'
+                  echo '<resources>'
+              } > "$xml_file"
 
-              # Append the translation string
-              translation=${translations["$lang"]}
-              if [[ "$id" == *","* ]]; then
-                  # This is a plural string
-                  echo "    <plurals name=\"$id\">" >> "$xml_file"
-                  echo "        <item quantity=\"one\">${translations["$lang_code,$id,one"]}</item>" >> "$xml_file"
-                  echo "        <item quantity=\"other\">${translations["$lang_code,$id,other"]}</item>" >> "$xml_file"
-                  echo "    </plurals>" >> "$xml_file"
-              else
-                  echo "    <string name=\"$id\">$translation</string>" >> "$xml_file"
-              fi
-          done
+              # Add translations to the XML
+              for key in "${!translations[@]}"; do
+                  if [[ "$key" == "$lang,"* ]]; then
+                      id="${key#*,}"
+                      if [[ "$id" == *","* ]]; then
+                          # This is a plural string
+                          echo "    <plurals name=\"$id\">" >> "$xml_file"
+                          echo "        <item quantity=\"one\">${translations["$key,one"]}</item>" >> "$xml_file"
+                          echo "        <item quantity=\"other\">${translations["$key,other"]}</item>" >> "$xml_file"
+                          echo "    </plurals>" >> "$xml_file"
+                      else
+                          # This is a normal string
+                          echo "    <string name=\"$id\">${translations[$key]}</string>" >> "$xml_file"
+                      fi
+                  fi
+              done
 
-          # Close the resources tag for each language file
-          for lang in $(ls $VALUES_DIR | grep 'values-'); do
-              xml_file="$VALUES_DIR/$lang/strings.xml"
+              # Close the resources tag
               echo '</resources>' >> "$xml_file"
-              echo "strings.xml updated for $lang"
+              echo "strings.xml generated and saved to $xml_file"
           done
           EOF
 

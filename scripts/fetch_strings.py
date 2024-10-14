@@ -7,7 +7,7 @@ import xml.etree.ElementTree as ET
 
 def fetch_strings(sheet_id):
     # Retrieve the credentials JSON string from the environment variable
-    creds_json_str = os.getenv('GOOGLE_CREDENTIALS_JSON')
+    creds_json_str = os.getenv('GOOGLE_SHEET_CREDENTIALS')
     if not creds_json_str:
         print("Error: GOOGLE_CREDENTIALS_JSON environment variable not set.")
         sys.exit(1)

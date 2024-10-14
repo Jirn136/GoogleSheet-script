@@ -62,8 +62,10 @@ def fetch_strings(sheet_id):
             ET.SubElement(plural_elem, "item", quantity=quantity_str).text = translation
 
     # Write the XML to the file
-    tree = ET.ElementTree(resources)
-    tree.write(output_path, encoding="utf-8", xml_declaration=True)
+    with open(output_path, 'wb') as f:
+        tree = ET.ElementTree(resources)
+        tree.write(f, encoding="utf-8", xml_declaration=True)
+    
     print(f"strings.xml generated and saved to {output_path}")
 
 if __name__ == '__main__':

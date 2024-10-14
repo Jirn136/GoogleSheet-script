@@ -24,7 +24,7 @@ jobs:
         run: |
           pip install gspread oauth2client jq
 
-            - name: Fetch strings and generate XML
+      - name: Fetch strings and generate XML
         run: |
           #!/bin/bash
           

@@ -24,9 +24,8 @@ jobs:
         run: |
           pip install gspread oauth2client jq
 
-      - name: Create fetch_strings.sh script
+      - name: Fetch strings and generate XML
         run: |
-          cat << 'EOF' > fetch_strings.sh
           #!/bin/bash
           
           # Fetch strings from Google Sheets and generate strings.xml files
@@ -43,7 +42,7 @@ jobs:
               exit 1
           fi
 
-          SHEET_ID=$1
+          SHEET_ID=${{ github.event.inputs.sheet_id }}
           VALUES_DIR="./resources"
 
           # Create output directory if it does not exist
@@ -116,10 +115,5 @@ jobs:
 
               echo "strings.xml generated and saved to $xml_file"
           done
-          EOF
-
-      - name: Make fetch_strings.sh executable
-        run: chmod +x fetch_strings.sh
-
-      - name: Run fetch_strings.sh
-        run: ./fetch_strings.sh ${{ github.event.inputs.sheet_id }}
+        env:
+          CREDENTIALS: ${{ secrets.CREDENTIALS }}  # Get CREDENTIALS from GitHub Secrets

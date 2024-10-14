@@ -56,9 +56,10 @@ def fetch_strings(sheet_id):
         if string_type == "string":
             ET.SubElement(resources, "string", name=string_id).text = translation
         elif string_type == "plural":
-            quantity = str(row.get('Quantity', 'other'))  # Convert quantity to string
+            quantity = row.get('Quantity', 'other')
+            quantity_str = str(quantity)  # Ensure quantity is a string
             plural_elem = ET.SubElement(resources, "plurals", name=string_id)
-            ET.SubElement(plural_elem, "item", quantity=quantity).text = translation
+            ET.SubElement(plural_elem, "item", quantity=quantity_str).text = translation
 
     # Write the XML to the file
     tree = ET.ElementTree(resources)

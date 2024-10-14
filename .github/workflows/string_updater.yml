@@ -76,10 +76,10 @@ jobs:
               exit 1
           fi
 
-          # Create a temporary associative array for translations
+          # Create an associative array for translations
           declare -A translations
 
-          # Generate strings.xml for each language column
+          # Generate strings.xml entries for each row
           echo "$DATA" | jq -c '.[]' | while IFS= read -r row; do
               # Extract the row's ID
               id=$(echo "$row" | jq -r '.ID')
@@ -91,7 +91,7 @@ jobs:
               done
           done
 
-          # Now, create the strings.xml files for each language
+          # Now, create a single strings.xml file for all languages
           for lang in "${!translations[@]}"; do
               lang_dir="$VALUES_DIR/values-${lang}"
               mkdir -p "$lang_dir"

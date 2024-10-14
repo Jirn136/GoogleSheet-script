@@ -51,7 +51,11 @@ def fetch_strings(sheet_id):
     for row in data:
         string_id = row['ID']
         string_type = row['Type']
-        translation = str(row['en'])  # Adjust to match your language column
+        translation = str(row['en'])  # Convert translation to a string to avoid type errors
+
+        # Ensure translation is a string for further processing
+        if isinstance(translation, int):
+            translation = str(translation)
 
         if string_type == "string":
             ET.SubElement(resources, "string", name=string_id).text = translation

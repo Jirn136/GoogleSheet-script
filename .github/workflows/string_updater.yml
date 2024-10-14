@@ -25,9 +25,9 @@ jobs:
           pip install gspread oauth2client jq
 
       - name: Make fetch_strings.sh executable
-        run: chmod +x fetch_strings.sh
+        run: chmod +x scripts/fetch_strings.sh  # Adjust path as necessary
 
       - name: Run fetch_strings.sh
         env:
           CREDENTIALS: ${{ secrets.CREDENTIALS }}  # Get CREDENTIALS from GitHub Secrets
-        run: ./scripts/fetch_strings.sh ${{ github.event.inputs.sheet_id }}
+        run: ./scripts/fetch_strings.sh ${{ github.event.inputs.sheet_id }}  # Adjust path as necessary

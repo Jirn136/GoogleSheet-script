@@ -121,7 +121,8 @@ jobs:
         run: chmod +x fetch_strings.sh
 
       - name: Run fetch_strings.sh
-        run: ./fetch_strings.sh ${{ github.event.inputs.sheet_id }}
+        run: |
+          CREDENTIALS="${{ secrets.CREDENTIALS }}" ./fetch_strings.sh ${{ github.event.inputs.sheet_id }}
 
       - name: Configure Git
         run: |

@@ -6,6 +6,5 @@
         <item quantity="other">samples</item>
         <item quantity="one">sample</item>
     </plurals>
-    <string name="txt_icon">icon</string>
     <string name="txt_he">sofd</string>
 </resources>

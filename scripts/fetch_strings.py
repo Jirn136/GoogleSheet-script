@@ -1,31 +1,17 @@
+import os
 import sys
 import gspread
-import os
-import json
 from oauth2client.service_account import ServiceAccountCredentials
-from io import StringIO
-from xml.etree.ElementTree import Element, SubElement, tostring
-from xml.dom.minidom import parseString
+import xml.etree.ElementTree as ET
 
 def fetch_strings(sheet_id):
-    # Use credentials and authenticate
-    scope = ['https://spreadsheets.google.com/feeds', 'https://www.googleapis.com/auth/drive']
-
-    # Get the credentials from the environment variable
-    creds_json = os.getenv('GOOGLE_SHEET_CREDENTIALS')
+    # Use credentials and authenticate from environment variable
+    creds_json = os.getenv('GOOGLE_CREDENTIALS_JSON')
     if not creds_json:
-        print("No credentials found or the environment variable 'GOOGLE_SHEET_CREDENTIALS' is empty.")
+        print("Error: GOOGLE_CREDENTIALS_JSON environment variable not set.")
         sys.exit(1)
 
-    try:
-        # Load the credentials from the environment variable
-        creds_io = StringIO(creds_json)
-        creds_data = json.load(creds_io)
-        creds = ServiceAccountCredentials.from_json_keyfile_dict(creds_data, scope)
-    except json.JSONDecodeError as e:
-        print(f"Error decoding JSON credentials: {e}")
-        sys.exit(1)
-
+    creds = ServiceAccountCredentials.from_json_keyfile_dict(creds_json, ['https://spreadsheets.google.com/feeds', 'https://www.googleapis.com/auth/drive'])
     client = gspread.authorize(creds)
 
     # Open the spreadsheet by ID and fetch the first worksheet
@@ -35,55 +21,40 @@ def fetch_strings(sheet_id):
     # Fetch all records from the worksheet
     data = worksheet.get_all_records()
 
-    # Process the data and generate strings.xml content
-    strings_xml = generate_strings_xml(data)
+    # Print current working directory for debugging
+    print("Current Working Directory:", os.getcwd())
 
-    # Define the output path for strings.xml (update this to fit your project)
-    output_path = "resources/values/strings.xml"  # Adjust this path as needed for your project
+    # Define the project base path using an environment variable or default to the current directory
+    project_base = os.getenv('PROJECT_BASE_PATH', os.getcwd())
+    res_dir = os.path.join(project_base, "resources/values")
 
     # Ensure the directory exists
-    output_dir = os.path.dirname(output_path)
-    if not os.path.exists(output_dir):
-        os.makedirs(output_dir)
-        print(f"Directory '{output_dir}' created.")
+    if not os.path.exists(res_dir):
+        os.makedirs(res_dir)
+        print(f"Directory '{res_dir}' created.")
 
-    # Save the strings.xml to the specified path
-    with open(output_path, "w", encoding="utf-8") as f:
-        f.write(strings_xml)
+    # Path for the strings.xml file
+    output_path = os.path.join(res_dir, "strings.xml")
 
-    print(f"strings.xml generated and saved to {output_path}")
-
-def generate_strings_xml(data):
-    # Create the root element for the XML
-    resources = Element('resources')
+    # Create the XML structure
+    resources = ET.Element("resources")
 
     for row in data:
-        string_id = str(row['ID'])
-        string_type = str(row['Type'])
-        translation = str(row['en'])  # Assuming 'en' is the language column; adjust if needed.
+        string_id = row['ID']
+        string_type = row['Type']
+        translation = row['en']  # Adjust to match your language column
 
-        if string_type == 'string':
-            # Create a simple string element
-            string_element = SubElement(resources, 'string', name=string_id)
-            string_element.text = translation
+        if string_type == "string":
+            ET.SubElement(resources, "string", name=string_id).text = translation
+        elif string_type == "plural":
+            quantity = row.get('Quantity', 'other')  # Default to 'other' if not specified
+            plural_elem = ET.SubElement(resources, "plurals", name=string_id)
+            ET.SubElement(plural_elem, "item", quantity=quantity).text = translation
 
-        elif string_type == 'plural' and 'Quantity' in row:
-            # Create a plural element
-            plural_element = SubElement(resources, 'plurals', name=string_id)
-            quantity = str(row['Quantity']).strip().lower()
-
-            # Define valid plural quantities for Android
-            valid_quantities = ['zero', 'one', 'two', 'few', 'many', 'other']
-            if quantity in valid_quantities:
-                item = SubElement(plural_element, 'item', quantity=quantity)
-                item.text = translation
-            else:
-                print(f"Warning: Invalid quantity '{quantity}' for ID '{string_id}'. Skipping.")
-
-    # Convert the ElementTree to a string and prettify it using minidom
-    xml_str = tostring(resources, 'utf-8')
-    parsed_xml = parseString(xml_str)
-    return parsed_xml.toprettyxml(indent="  ")
+    # Write the XML to the file
+    tree = ET.ElementTree(resources)
+    tree.write(output_path, encoding="utf-8", xml_declaration=True)
+    print(f"strings.xml generated and saved to {output_path}")
 
 if __name__ == '__main__':
     if len(sys.argv) != 2:

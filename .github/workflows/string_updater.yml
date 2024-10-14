@@ -32,8 +32,8 @@ jobs:
           # Fetch strings from Google Sheets and generate strings.xml files
 
           # Check for required environment variable
-          if [ -z "$GOOGLE_SHEET_CREDENTIALS" ]; then
-              echo "Error: GOOGLE_SHEET_CREDENTIALS is not set."
+          if [ -z "$CREDENTIALS" ]; then
+              echo "Error: CREDENTIALS is not set."
               exit 1
           fi
 
@@ -60,7 +60,7 @@ jobs:
           scope = ['https://spreadsheets.google.com/feeds', 'https://www.googleapis.com/auth/drive']
 
           # Load the credentials from the environment variable
-          creds_json = os.getenv('GOOGLE_SHEET_CREDENTIALS')
+          creds_json = os.getenv('CREDENTIALS')
           creds_data = json.loads(creds_json)
           creds = ServiceAccountCredentials.from_json_keyfile_dict(creds_data, scope)
 

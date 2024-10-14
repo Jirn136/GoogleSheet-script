@@ -58,9 +58,9 @@ def generate_strings_xml(data):
     resources = Element('resources')
 
     for row in data:
-        string_id = row['ID']
-        string_type = row['Type']
-        translation = row['en']  # Assuming 'en' is the language column; adjust if needed.
+        string_id = str(row['ID'])
+        string_type = str(row['Type'])
+        translation = str(row['en'])  # Assuming 'en' is the language column; adjust if needed.
 
         if string_type == 'string':
             # Create a simple string element
@@ -70,7 +70,7 @@ def generate_strings_xml(data):
         elif string_type == 'plural' and 'Quantity' in row:
             # Create a plural element
             plural_element = SubElement(resources, 'plurals', name=string_id)
-            quantity = row['Quantity'].strip().lower()
+            quantity = str(row['Quantity']).strip().lower()
 
             # Define valid plural quantities for Android
             valid_quantities = ['zero', 'one', 'two', 'few', 'many', 'other']

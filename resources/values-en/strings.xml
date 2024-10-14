@@ -3,14 +3,9 @@
     <string name="txt_sample">Hello world</string>
     <string name="txt_new_string">Welcome</string>
     <plurals name="txt_multiple">
-        <item quantity="one">sample</item>
         <item quantity="other">samples</item>
-    <string name="txt_icon">icon</string>
-</resources>
-    <string name="txt_sample">Hello world</string>
-    <string name="txt_new_string">Welcome</string>
         <item quantity="one">sample</item>
-        <item quantity="other">samples</item>
+    </plurals>
     <string name="txt_icon">icon</string>
     <string name="txt_poi">poi</string>
 </resources>

@@ -3,14 +3,9 @@
     <string name="txt_sample">heir</string>
     <string name="txt_new_string">skdlf</string>
     <plurals name="txt_multiple">
-        <item quantity="one">sdkmfls</item>
         <item quantity="other">sdfms</item>
-    <string name="txt_icon">s,mc</string>
-</resources>
-    <string name="txt_sample">heir</string>
-    <string name="txt_new_string">skdlf</string>
         <item quantity="one">sdkmfls</item>
-        <item quantity="other">sdfms</item>
+    </plurals>
     <string name="txt_icon">s,mc</string>
     <string name="txt_poi">oeiru</string>
 </resources>

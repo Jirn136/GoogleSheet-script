@@ -26,6 +26,6 @@ jobs:
 
     - name: Run fetch_strings.py
       env:
-        GOOGLE_SHEET_CREDENTIALS: ${{ secrets.GOOGLE_SHEET_CREDENTIALS }}  # Reference the secret here
+        GOOGLE_SHEET_CREDENTIALS: ${{ secrets.CREDENTIALS }}  # Reference the secret here
       run: |
         python /home/runner/work/String-updater/String-updater/scripts/fetch_strings.py ${{ github.event.inputs.sheet_id }}

@@ -24,7 +24,7 @@ jobs:
         run: |
           pip install gspread oauth2client jq
 
-      - name: Fetch strings and generate XML
+            - name: Fetch strings and generate XML
         run: |
           #!/bin/bash
           
@@ -91,24 +91,29 @@ jobs:
               done
           done
 
-          # Now, create a single strings.xml file for all languages
+          # Create a single strings.xml file for all languages
           for lang in "${!translations[@]}"; do
               lang_dir="$VALUES_DIR/values-${lang}"
               mkdir -p "$lang_dir"
               xml_file="$lang_dir/strings.xml"
 
-              # Start writing the XML
+              # Create a temporary XML file to compare
+              tmp_file=$(mktemp)
               {
                   echo '<?xml version="1.0" encoding="utf-8"?>'
                   echo '<resources>'
-
-                  # Add translations to the XML file
                   echo -e "${translations[$lang]}"
-
                   echo '</resources>'
-              } > "$xml_file"
+              } > "$tmp_file"
 
-              echo "strings.xml generated and saved to $xml_file"
+              # Check if the new XML is different from the existing one
+              if ! diff -q "$tmp_file" "$xml_file" > /dev/null; then
+                  echo "Changes detected in $xml_file"
+                  mv "$tmp_file" "$xml_file"  # Move temp file to actual file
+              else
+                  echo "No changes in $xml_file"
+                  rm "$tmp_file"  # Remove temp file if no changes
+              fi
           done
         env:
           CREDENTIALS: ${{ secrets.CREDENTIALS }}  # Get CREDENTIALS from GitHub Secrets

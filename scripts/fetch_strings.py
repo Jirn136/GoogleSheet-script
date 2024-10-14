@@ -40,8 +40,11 @@ def fetch_strings(sheet_id):
     # Determine languages from the columns (all columns after 'ID', 'Type', and 'Quantity')
     languages = list(data[0].keys())[3:]  # Skip the first three columns (ID, Type, and Quantity)
 
-    # Set Git user info
-    set_git_user_info()
+    # Set Git user info dynamically
+    git_user_email, git_user_name = get_git_user_info()
+    
+    # Set the Git user configuration
+    set_git_user_info(git_user_email, git_user_name)
 
     # Process the data and generate strings.xml content for each language
     for lang in languages:
@@ -79,20 +82,22 @@ def fetch_strings(sheet_id):
     # Commit changes
     commit_changes()
 
-def set_git_user_info():
-    # Get GitHub user email and name from environment variables
-    git_user_email = os.getenv('GIT_USER_EMAIL')
-    git_user_name = os.getenv('GIT_USER_NAME')
-    
-    if not git_user_email or not git_user_name:
-        print("GitHub user email or name not found in environment variables.")
+def get_git_user_info():
+    try:
+        # Get the Git user email and name
+        git_user_email = subprocess.check_output(['git', 'config', 'user.email']).strip().decode()
+        git_user_name = subprocess.check_output(['git', 'config', 'user.name']).strip().decode()
+        return git_user_email, git_user_name
+    except subprocess.CalledProcessError as e:
+        print(f"Error retrieving Git user info: {e}")
         sys.exit(1)
 
+def set_git_user_info(email, name):
     # Set Git user configuration
     try:
-        subprocess.run(['git', 'config', '--global', 'user.email', git_user_email], check=True)
-        subprocess.run(['git', 'config', '--global', 'user.name', git_user_name], check=True)
-        print(f"Git user configured: {git_user_name} <{git_user_email}>")
+        subprocess.run(['git', 'config', '--global', 'user.email', email], check=True)
+        subprocess.run(['git', 'config', '--global', 'user.name', name], check=True)
+        print(f"Git user configured: {name} <{email}>")
     except subprocess.CalledProcessError as e:
         print(f"Error setting Git user info: {e}")
         sys.exit(1)

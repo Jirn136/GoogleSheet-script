@@ -31,8 +31,6 @@ jobs:
 
           # Fetch strings from Google Sheets and generate strings.xml files
 
-          # Usage: ./fetch_strings.sh <sheet_id>
-
           # Check for required environment variable
           if [ -z "$GOOGLE_SHEET_CREDENTIALS" ]; then
               echo "Error: GOOGLE_SHEET_CREDENTIALS is not set."
@@ -48,11 +46,8 @@ jobs:
           SHEET_ID=$1
           VALUES_DIR="./resources"
 
-          # Install dependencies
-          pip install gspread oauth2client jq || {
-              echo "Failed to install dependencies."
-              exit 1
-          }
+          # Create output directory if it does not exist
+          mkdir -p "$VALUES_DIR"
 
           # Fetch data from Google Sheets using Python
           DATA=$(python - <<END
@@ -86,9 +81,6 @@ jobs:
               echo "Error fetching data from Google Sheets."
               exit 1
           fi
-
-          # Create output directory if it does not exist
-          mkdir -p "$VALUES_DIR"
 
           # Generate strings.xml for each language column
           echo "$DATA" | jq -c '.[]' | while IFS= read -r row; do
@@ -135,4 +127,4 @@ jobs:
         uses: actions/upload-artifact@v2
         with:
           name: strings-xml-files
-          path: resources/**  # Adjust the path if needed
+          path: resources/**  # Adjust this if your structure is different

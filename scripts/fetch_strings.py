@@ -36,8 +36,8 @@ def fetch_strings(sheet_id):
     # Fetch all records from the worksheet
     data = worksheet.get_all_records()
 
-    # Determine languages from the columns
-    languages = list(data[0].keys())[2:]  # Assuming the first two columns are 'ID' and 'Type'
+    # Determine languages from the columns (all columns after 'ID' and 'Type')
+    languages = list(data[0].keys())[2:]  # Skip the first two columns (ID and Type)
 
     # Process the data and generate strings.xml content for each language
     for lang in languages:
@@ -77,8 +77,10 @@ def generate_strings_xml(data, lang):
         string_id = str(row['ID'])
         string_type = str(row['Type'])
 
+        # Only generate strings for the specified language
+        translation = str(row.get(lang, ''))  # Get the translation or empty string if not found
+
         if string_type == 'string':
-            translation = str(row.get(lang, ''))  # Get the translation or empty string if not found
             string_element = SubElement(resources, 'string', name=string_id)
             string_element.text = translation
 
@@ -89,9 +91,9 @@ def generate_strings_xml(data, lang):
             # Define valid plural quantities for Android
             valid_quantities = ['zero', 'one', 'two', 'few', 'many', 'other']
             if quantity in valid_quantities:
-                translation = str(row.get(lang, ''))
+                item_translation = str(row.get(lang, ''))
                 item = SubElement(plural_element, 'item', quantity=quantity)
-                item.text = translation
+                item.text = item_translation
             else:
                 print(f"Warning: Invalid quantity '{quantity}' for ID '{string_id}'. Skipping.")
 

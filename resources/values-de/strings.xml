@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="txt_sample">heir</string>
+    <string name="txt_new_string">skdlf</string>
+    <plurals name="txt_multiple">
+        <item quantity="other">sdfms</item>
+        <item quantity="one">sdkmfls</item>
+    </plurals>
+    <string name="txt_icon">s,mc</string>
+    <string name="txt_he">dfkd</string>
+</resources>

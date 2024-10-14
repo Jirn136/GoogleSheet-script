@@ -24,10 +24,11 @@ jobs:
         run: |
           pip install gspread oauth2client jq
 
-      - name: Fetch strings and generate XML
+      - name: Create fetch_strings.sh script
         run: |
+          cat << 'EOF' > fetch_strings.sh
           #!/bin/bash
-          
+
           # Fetch strings from Google Sheets and generate strings.xml files
 
           # Check for required environment variable
@@ -36,8 +37,13 @@ jobs:
               exit 1
           fi
 
-          # Use the provided Google Sheet ID
-          SHEET_ID=${{ github.event.inputs.sheet_id }}
+          # Check for required argument
+          if [ "$#" -ne 1 ]; then
+              echo "Usage: $0 <sheet_id>"
+              exit 1
+          fi
+
+          SHEET_ID=$1
           VALUES_DIR="./resources"
 
           # Create output directory if it does not exist
@@ -76,54 +82,59 @@ jobs:
               exit 1
           fi
 
-          # Create an associative array for translations
-          declare -A translations
-
-          # Generate strings.xml entries for each row
+          # Generate strings.xml for each language column
           echo "$DATA" | jq -c '.[]' | while IFS= read -r row; do
-              # Extract the row's ID
-              id=$(echo "$row" | jq -r '.ID')
+              # Extract language translations
+              declare -A translations
+              quantity=$(echo "$row" | jq -r '.Quantity')
 
-              # Loop through all language keys except for ID, Type, and Quantity
+              # Loop through all keys in the row
               for lang in $(echo "$row" | jq -r 'keys_unsorted[] | select(. != "ID" and . != "Type" and . != "Quantity")'); do
-                  translation=$(echo "$row" | jq -r ".\"$lang\"")
-                  translations[$lang]+="    <string name=\"$id\">$translation</string>\n"
+                  translations[$lang]=$(echo "$row" | jq -r ".\"$lang\"")
+              done
+
+              # Generate strings.xml files for each language
+              for lang in "${!translations[@]}"; do
+                  lang_dir="$VALUES_DIR/values-${lang}"
+                  mkdir -p "$lang_dir"
+                  xml_file="$lang_dir/strings.xml"
+
+                  # Start writing the XML
+                  {
+                      echo '<?xml version="1.0" encoding="utf-8"?>'
+                      echo '<resources>'
+
+                      for id in $(echo "$row" | jq -r '.ID'); do
+                          translation=${translations[$lang]}
+                          echo "    <string name=\"$id\">$translation</string>"
+                      done
+
+                      echo '</resources>'
+                  } > "$xml_file"
+
+                  echo "strings.xml generated and saved to $xml_file"
               done
           done
+          EOF
 
-          # Create a single strings.xml file for all languages
-          for lang in "${!translations[@]}"; do
-              lang_dir="$VALUES_DIR/values-${lang}"
-              mkdir -p "$lang_dir"
-              xml_file="$lang_dir/strings.xml"
+      - name: Make fetch_strings.sh executable
+        run: chmod +x fetch_strings.sh
 
-              # Create a temporary XML file to compare
-              tmp_file=$(mktemp)
-              {
-                  echo '<?xml version="1.0" encoding="utf-8"?>'
-                  echo '<resources>'
-                  echo -e "${translations[$lang]}"
-                  echo '</resources>'
-              } > "$tmp_file"
+      - name: Run fetch_strings.sh
+        env: 
+          CREDENTIALS: ${{ secrets.CREDENTIALS }}  # Set environment variable here
+        run: |
+          ./fetch_strings.sh ${{ github.event.inputs.sheet_id }}
 
-              # Check if the new XML is different from the existing one
-              if ! diff -q "$tmp_file" "$xml_file" > /dev/null; then
-                  echo "Changes detected in $xml_file"
-                  mv "$tmp_file" "$xml_file"  # Move temp file to actual file
-              else
-                  echo "No changes in $xml_file"
-                  rm "$tmp_file"  # Remove temp file if no changes
-              fi
-          done
-        env:
-          CREDENTIALS: ${{ secrets.CREDENTIALS }}  # Get CREDENTIALS from GitHub Secrets
+      - name: Configure Git
+        run: |
+          git config --local user.name "${{ secrets.USER_NAME }}"
+          git config --local user.email "${{ secrets.USER_EMAIL }}"
 
       - name: Commit and push changes
         run: |
-          git config --local user.email "${{ secrets.USER_EMAIL }}"
-          git config --local user.name "${{ secrets.USER_NAME }}"
-          git add ./resources
-          git commit -m "Update strings.xml files from Google Sheets"
+          git add resources/
+          git commit -m "Add generated strings.xml files from Google Sheets"
           git push
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # Required for pushing changes
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

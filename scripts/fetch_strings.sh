@@ -53,37 +53,36 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
-# Create a temporary associative array for translations
-declare -A translations
-
 # Generate strings.xml for each language column
 echo "$DATA" | jq -c '.[]' | while IFS= read -r row; do
-    # Extract the row's ID
-    id=$(echo "$row" | jq -r '.ID')
+    # Extract language translations
+    declare -A translations
+    quantity=$(echo "$row" | jq -r '.Quantity')
 
-    # Loop through all language keys except for ID, Type, and Quantity
+    # Loop through all keys in the row
     for lang in $(echo "$row" | jq -r 'keys_unsorted[] | select(. != "ID" and . != "Type" and . != "Quantity")'); do
-        translation=$(echo "$row" | jq -r ".\"$lang\"")
-        translations[$lang]+="    <string name=\"$id\">$translation</string>\n"
+        translations[$lang]=$(echo "$row" | jq -r ".\"$lang\"")
     done
-done
 
-# Now, create the strings.xml files for each language
-for lang in "${!translations[@]}"; do
-    lang_dir="$VALUES_DIR/values-${lang}"
-    mkdir -p "$lang_dir"
-    xml_file="$lang_dir/strings.xml"
+    # Generate strings.xml files for each language
+    for lang in "${!translations[@]}"; do
+        lang_dir="$VALUES_DIR/values-${lang}"
+        mkdir -p "$lang_dir"
+        xml_file="$lang_dir/strings.xml"
 
-    # Start writing the XML
-    {
-        echo '<?xml version="1.0" encoding="utf-8"?>'
-        echo '<resources>'
+        # Start writing the XML
+        {
+            echo '<?xml version="1.0" encoding="utf-8"?>'
+            echo '<resources>'
 
-        # Add translations to the XML file
-        echo -e "${translations[$lang]}"
+            for id in $(echo "$row" | jq -r '.ID'); do
+                translation=${translations[$lang]}
+                echo "    <string name=\"$id\">$translation</string>"
+            done
 
-        echo '</resources>'
-    } > "$xml_file"
+            echo '</resources>'
+        } > "$xml_file"
 
-    echo "strings.xml generated and saved to $xml_file"
+        echo "strings.xml generated and saved to $xml_file"
+    done
 done

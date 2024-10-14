@@ -87,21 +87,31 @@ jobs:
 
           # Process each row and collect translations
           echo "$DATA" | jq -c '.[]' | while IFS= read -r row; do
-              quantity=$(echo "$row" | jq -r '.Quantity')
+              id=$(echo "$row" | jq -r '.ID')
+              type=$(echo "$row" | jq -r '.Type')
 
-              # Loop through all keys in the row except for ID, Type, and Quantity
-              for lang in $(echo "$row" | jq -r 'keys_unsorted[] | select(. != "ID" and . != "Type" and . != "Quantity")'); do
-                  id=$(echo "$row" | jq -r '.ID')
-                  translation=$(echo "$row" | jq -r ".\"$lang\"")
-                  translations["$lang,$id"]="$translation"
-              done
+              # Handle string and plural types
+              if [ "$type" == "string" ]; then
+                  lang=$(echo "$row" | jq -r 'keys_unsorted[] | select(. != "ID" and . != "Type" and . != "Quantity")')
+                  for lang_code in $lang; do
+                      translation=$(echo "$row" | jq -r ".\"$lang_code\"")
+                      translations["$lang_code,$id"]="$translation"
+                  done
+              elif [ "$type" == "plural" ]; then
+                  for lang_code in $(echo "$row" | jq -r 'keys_unsorted[] | select(. != "ID" and . != "Type" and . != "Quantity")'); do
+                      singular=$(echo "$row" | jq -r ".\"$lang_code\" | select(. != null) | .singular")
+                      plural=$(echo "$row" | jq -r ".\"$lang_code\" | select(. != null) | .plural")
+                      translations["$lang_code,$id,one"]="$singular"
+                      translations["$lang_code,$id,other"]="$plural"
+                  done
+              fi
           done
 
           # Generate strings.xml for each language
           for lang in "${!translations[@]}"; do
               lang_code="${lang%%,*}"
               id="${lang##*,}"
-              
+
               lang_dir="$VALUES_DIR/values-${lang_code}"
               mkdir -p "$lang_dir"
               xml_file="$lang_dir/strings.xml"
@@ -116,7 +126,15 @@ jobs:
 
               # Append the translation string
               translation=${translations["$lang"]}
-              echo "    <string name=\"$id\">$translation</string>" >> "$xml_file"
+              if [[ "$id" == *","* ]]; then
+                  # This is a plural string
+                  echo "    <plurals name=\"$id\">" >> "$xml_file"
+                  echo "        <item quantity=\"one\">${translations["$lang_code,$id,one"]}</item>" >> "$xml_file"
+                  echo "        <item quantity=\"other\">${translations["$lang_code,$id,other"]}</item>" >> "$xml_file"
+                  echo "    </plurals>" >> "$xml_file"
+              else
+                  echo "    <string name=\"$id\">$translation</string>" >> "$xml_file"
+              fi
           done
 
           # Close the resources tag for each language file

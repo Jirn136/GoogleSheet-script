@@ -115,8 +115,8 @@ jobs:
 
       - name: Commit and push changes
         run: |
-          git config --local user.email "github-actions@github.com"
-          git config --local user.name "GitHub Actions"
+          git config --local user.email "${{ secrets.COMMIT_EMAIL }}"
+          git config --local user.name "${{ secrets.COMMIT_NAME }}"
           git add ./resources
           git commit -m "Update strings.xml files from Google Sheets"
           git push

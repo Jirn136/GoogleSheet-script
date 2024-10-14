@@ -36,57 +36,60 @@ def fetch_strings(sheet_id):
     # Fetch all records from the worksheet
     data = worksheet.get_all_records()
 
-    # Process the data and generate strings.xml content
-    strings_xml = generate_strings_xml(data)
+    # Determine languages from the columns
+    languages = list(data[0].keys())[2:]  # Assuming the first two columns are 'ID' and 'Type'
 
-    # Define the output path for strings.xml (adjust the path as needed for your project)
-    output_path = "./resources/values/strings.xml"  # Using a generic path in the current directory
-
-    # Ensure the directory exists and has write permissions
-    output_dir = os.path.dirname(output_path)
-    if not os.path.exists(output_dir):
-        os.makedirs(output_dir)
-        print(f"Directory '{output_dir}' created.")
+    # Process the data and generate strings.xml content for each language
+    for lang in languages:
+        strings_xml = generate_strings_xml(data, lang)
         
-        # Set the directory's permissions to ensure it's writable
-        os.chmod(output_dir, stat.S_IRWXU | stat.S_IRWXG | stat.S_IRWXO)  # Read, write, and execute for user, group, others
+        # Define the output path for strings.xml based on language
+        output_path = f"./resources/values-{lang}/strings.xml"  # Change path as needed
 
-    # Check if we have write access to the directory
-    if not os.access(output_dir, os.W_OK):
-        print(f"Directory '{output_dir}' is not writable. Adjusting permissions...")
-        os.chmod(output_dir, stat.S_IRWXU | stat.S_IRWXG | stat.S_IRWXO)
+        # Ensure the directory exists and has write permissions
+        output_dir = os.path.dirname(output_path)
+        if not os.path.exists(output_dir):
+            os.makedirs(output_dir)
+            print(f"Directory '{output_dir}' created.")
+            
+            # Set the directory's permissions to ensure it's writable
+            os.chmod(output_dir, stat.S_IRWXU | stat.S_IRWXG | stat.S_IRWXO)  # Read, write, and execute for user, group, others
 
-    # Save the strings.xml to the specified path
-    try:
-        with open(output_path, "w", encoding="utf-8") as f:
-            f.write(strings_xml)
-        print(f"strings.xml generated and saved to {output_path}")
-    except Exception as e:
-        print(f"Error writing to the file: {e}")
-        sys.exit(1)
+        # Check if we have write access to the directory
+        if not os.access(output_dir, os.W_OK):
+            print(f"Directory '{output_dir}' is not writable. Adjusting permissions...")
+            os.chmod(output_dir, stat.S_IRWXU | stat.S_IRWXG | stat.S_IRWXO)
 
-def generate_strings_xml(data):
+        # Save the strings.xml to the specified path
+        try:
+            with open(output_path, "w", encoding="utf-8") as f:
+                f.write(strings_xml)
+            print(f"strings.xml generated and saved to {output_path}")
+        except Exception as e:
+            print(f"Error writing to the file: {e}")
+            sys.exit(1)
+
+def generate_strings_xml(data, lang):
     # Create the root element for the XML
     resources = Element('resources')
 
     for row in data:
         string_id = str(row['ID'])
         string_type = str(row['Type'])
-        translation = str(row['en'])  # Assuming 'en' is the language column; adjust if needed.
 
         if string_type == 'string':
-            # Create a simple string element
+            translation = str(row.get(lang, ''))  # Get the translation or empty string if not found
             string_element = SubElement(resources, 'string', name=string_id)
             string_element.text = translation
 
         elif string_type == 'plural' and 'Quantity' in row:
-            # Create a plural element
             plural_element = SubElement(resources, 'plurals', name=string_id)
             quantity = str(row['Quantity']).strip().lower()
 
             # Define valid plural quantities for Android
             valid_quantities = ['zero', 'one', 'two', 'few', 'many', 'other']
             if quantity in valid_quantities:
+                translation = str(row.get(lang, ''))
                 item = SubElement(plural_element, 'item', quantity=quantity)
                 item.text = translation
             else:

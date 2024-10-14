@@ -121,8 +121,10 @@ jobs:
         run: chmod +x fetch_strings.sh
 
       - name: Run fetch_strings.sh
+        env: 
+          CREDENTIALS: ${{ secrets.CREDENTIALS }}  # Set environment variable here
         run: |
-          CREDENTIALS="${{ secrets.CREDENTIALS }}" ./fetch_strings.sh ${{ github.event.inputs.sheet_id }}
+          ./fetch_strings.sh ${{ github.event.inputs.sheet_id }}
 
       - name: Configure Git
         run: |

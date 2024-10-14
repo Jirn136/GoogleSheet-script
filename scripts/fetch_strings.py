@@ -7,7 +7,7 @@ import xml.etree.ElementTree as ET
 
 def fetch_strings(sheet_id):
     # Retrieve the credentials JSON string from the environment variable
-    creds_json_str = os.getenv('GOOGLE_SHEET_CREDENTIALS')
+    creds_json_str = os.getenv('GOOGLE_CREDENTIALS_JSON')
     if not creds_json_str:
         print("Error: GOOGLE_CREDENTIALS_JSON environment variable not set.")
         sys.exit(1)
@@ -51,12 +51,12 @@ def fetch_strings(sheet_id):
     for row in data:
         string_id = row['ID']
         string_type = row['Type']
-        translation = row['en']  # Adjust to match your language column
+        translation = str(row['en'])  # Adjust to match your language column
 
         if string_type == "string":
             ET.SubElement(resources, "string", name=string_id).text = translation
         elif string_type == "plural":
-            quantity = row.get('Quantity', 'other')  # Default to 'other' if not specified
+            quantity = str(row.get('Quantity', 'other'))  # Convert quantity to string
             plural_elem = ET.SubElement(resources, "plurals", name=string_id)
             ET.SubElement(plural_elem, "item", quantity=quantity).text = translation
 

@@ -6,3 +6,9 @@
         <item quantity="one">sample</item>
         <item quantity="other">samples</item>
 </resources>
+    <string name="txt_sample">Hello world</string>
+    <string name="txt_new_string">Welcome</string>
+        <item quantity="one">sample</item>
+        <item quantity="other">samples</item>
+    <string name="txt_icon">icon</string>
+</resources>

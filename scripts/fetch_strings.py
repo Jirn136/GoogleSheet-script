@@ -1,16 +1,25 @@
 import os
 import sys
+import json
 import gspread
 from oauth2client.service_account import ServiceAccountCredentials
 import xml.etree.ElementTree as ET
 
 def fetch_strings(sheet_id):
-    # Use credentials and authenticate from environment variable
-    creds_json = os.getenv('GOOGLE_SHEET_CREDENTIALS')
-    if not creds_json:
+    # Retrieve the credentials JSON string from the environment variable
+    creds_json_str = os.getenv('GOOGLE_SHEET_CREDENTIALS')
+    if not creds_json_str:
         print("Error: GOOGLE_CREDENTIALS_JSON environment variable not set.")
         sys.exit(1)
 
+    # Parse the JSON string into a dictionary
+    try:
+        creds_json = json.loads(creds_json_str)
+    except json.JSONDecodeError:
+        print("Error: Failed to parse GOOGLE_CREDENTIALS_JSON. Ensure it is a valid JSON string.")
+        sys.exit(1)
+
+    # Authenticate using the parsed credentials dictionary
     creds = ServiceAccountCredentials.from_json_keyfile_dict(creds_json, ['https://spreadsheets.google.com/feeds', 'https://www.googleapis.com/auth/drive'])
     client = gspread.authorize(creds)
 

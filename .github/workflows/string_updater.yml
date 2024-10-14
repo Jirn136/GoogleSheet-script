@@ -30,4 +30,4 @@ jobs:
       - name: Run fetch_strings.sh
         env:
           CREDENTIALS: ${{ secrets.CREDENTIALS }}  # Get CREDENTIALS from GitHub Secrets
-        run: ./fetch_strings.sh ${{ github.event.inputs.sheet_id }}
+        run: ./scripts/fetch_strings.sh ${{ github.event.inputs.sheet_id }}

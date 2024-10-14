@@ -24,11 +24,6 @@ jobs:
         run: |
           pip install gspread oauth2client jq
 
-      - name: Configure Git user
-        run: |
-          git config --global user.email "${{ secrets.USER_EMAIL }}"
-          git config --global user.name "${{ secrets.USER_NAME }}"
-
       - name: Create fetch_strings.sh script
         run: |
           cat << 'EOF' > fetch_strings.sh
@@ -132,8 +127,3 @@ jobs:
 
       - name: Make fetch_strings.sh executable
         run: chmod +x fetch_strings.sh
-
-      - name: Run fetch_strings.sh
-        env:
-          GOOGLE_SHEET_CREDENTIALS: ${{ secrets.CREDENTIALS }}  # Reference the secret here
-        run: ./fetch_strings.sh ${{ github.event.inputs.sheet_id }}

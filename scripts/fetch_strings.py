@@ -36,8 +36,8 @@ def fetch_strings(sheet_id):
     # Fetch all records from the worksheet
     data = worksheet.get_all_records()
 
-    # Determine languages from the columns (all columns after 'ID' and 'Type')
-    languages = list(data[0].keys())[2:]  # Skip the first two columns (ID and Type)
+    # Determine languages from the columns (all columns after 'ID', 'Type', and 'Quantity')
+    languages = list(data[0].keys())[3:]  # Skip the first three columns (ID, Type, and Quantity)
 
     # Process the data and generate strings.xml content for each language
     for lang in languages:
@@ -84,9 +84,10 @@ def generate_strings_xml(data, lang):
             string_element = SubElement(resources, 'string', name=string_id)
             string_element.text = translation
 
-        elif string_type == 'plural' and 'Quantity' in row:
+        elif string_type == 'plural':
+            # Ensure the plural element is handled properly
             plural_element = SubElement(resources, 'plurals', name=string_id)
-            quantity = str(row['Quantity']).strip().lower()
+            quantity = str(row.get('Quantity', '')).strip().lower()
 
             # Define valid plural quantities for Android
             valid_quantities = ['zero', 'one', 'two', 'few', 'many', 'other']

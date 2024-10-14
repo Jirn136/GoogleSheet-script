@@ -55,36 +55,39 @@ fi
 
 # Generate strings.xml for each language column
 echo "$DATA" | jq -c '.[]' | while IFS= read -r row; do
-    ID=$(echo "$row" | jq -r '.ID')
-    TYPE=$(echo "$row" | jq -r '.Type')
+    declare -A translations
+    id=$(echo "$row" | jq -r '.ID')
+    type=$(echo "$row" | jq -r '.Type')
 
-    # Loop through all language columns
+    # Loop through all language keys
     for lang in $(echo "$row" | jq -r 'keys_unsorted[] | select(. != "ID" and . != "Type" and . != "Quantity")'); do
-        translation=$(echo "$row" | jq -r ".\"$lang\"")
+        translations[$lang]=$(echo "$row" | jq -r ".\"$lang\"")
+
+        # Define the output directory and file
         lang_dir="$VALUES_DIR/values-${lang}"
         mkdir -p "$lang_dir"
         xml_file="$lang_dir/strings.xml"
 
-        # Check if file exists, if not, initialize it
+        # If it's the first run, start the XML file structure
         if [ ! -f "$xml_file" ]; then
             echo '<?xml version="1.0" encoding="utf-8"?>' > "$xml_file"
             echo '<resources>' >> "$xml_file"
         fi
 
-        # Add the translation based on type
-        if [ "$TYPE" == "string" ]; then
-            echo "    <string name=\"$ID\">$translation</string>" >> "$xml_file"
-        elif [ "$TYPE" == "plural" ]; then
-            if ! grep -q "<plurals name=\"$ID\">" "$xml_file"; then
-                echo "    <plurals name=\"$ID\">" >> "$xml_file"
-            fi
+        # Handle different types
+        if [ "$type" == "string" ]; then
+            echo "    <string name=\"$id\">${translations[$lang]}</string>" >> "$xml_file"
+        elif [ "$type" == "plural" ]; then
             quantity=$(echo "$row" | jq -r '.Quantity')
-            echo "        <item quantity=\"$quantity\">$translation</item>" >> "$xml_file"
+            if ! grep -q "<plurals name=\"$id\">" "$xml_file"; then
+                echo "    <plurals name=\"$id\">" >> "$xml_file"
+            fi
+            echo "        <item quantity=\"$quantity\">${translations[$lang]}</item>" >> "$xml_file"
         fi
     done
 done
 
-# Finalize all strings.xml files by closing the resources tag
-find "$VALUES_DIR" -name 'strings.xml' | while read -r xml_file; do
-    echo '</resources>' >> "$xml_file"
+# Close all strings.xml files properly
+find "$VALUES_DIR" -name "strings.xml" | while read -r file; do
+    echo "</resources>" >> "$file"
 done

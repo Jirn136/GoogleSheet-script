@@ -2,11 +2,9 @@
 
 # Fetch strings from Google Sheets and generate strings.xml files
 
-# Usage: ./fetch_strings.sh <sheet_id>
-
 # Check for required environment variable
-if [ -z "$GOOGLE_SHEET_CREDENTIALS" ]; then
-    echo "Error: GOOGLE_SHEET_CREDENTIALS is not set."
+if [ -z "$CREDENTIALS" ]; then
+    echo "Error: CREDENTIALS is not set."
     exit 1
 fi
 
@@ -19,11 +17,8 @@ fi
 SHEET_ID=$1
 VALUES_DIR="./resources"
 
-# Install dependencies
-pip install gspread oauth2client || {
-    echo "Failed to install dependencies."
-    exit 1
-}
+# Create output directory if it does not exist
+mkdir -p "$VALUES_DIR"
 
 # Fetch data from Google Sheets using Python
 DATA=$(python - <<END
@@ -36,7 +31,7 @@ from oauth2client.service_account import ServiceAccountCredentials
 scope = ['https://spreadsheets.google.com/feeds', 'https://www.googleapis.com/auth/drive']
 
 # Load the credentials from the environment variable
-creds_json = os.getenv('GOOGLE_SHEET_CREDENTIALS')
+creds_json = os.getenv('CREDENTIALS')
 creds_data = json.loads(creds_json)
 creds = ServiceAccountCredentials.from_json_keyfile_dict(creds_data, scope)
 
@@ -58,39 +53,37 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
-# Create output directory if it does not exist
-mkdir -p "$VALUES_DIR"
+# Create a temporary associative array for translations
+declare -A translations
 
 # Generate strings.xml for each language column
 echo "$DATA" | jq -c '.[]' | while IFS= read -r row; do
-    # Extract language translations
-    declare -A translations
-    quantity=$(echo "$row" | jq -r '.Quantity')
-    
-    # Loop through all keys in the row
+    # Extract the row's ID
+    id=$(echo "$row" | jq -r '.ID')
+
+    # Loop through all language keys except for ID, Type, and Quantity
     for lang in $(echo "$row" | jq -r 'keys_unsorted[] | select(. != "ID" and . != "Type" and . != "Quantity")'); do
-        translations[$lang]=$(echo "$row" | jq -r ".\"$lang\"")
+        translation=$(echo "$row" | jq -r ".\"$lang\"")
+        translations[$lang]+="    <string name=\"$id\">$translation</string>\n"
     done
+done
 
-    # Generate strings.xml files for each language
-    for lang in "${!translations[@]}"; do
-        lang_dir="$VALUES_DIR/values-${lang}"
-        mkdir -p "$lang_dir"
-        xml_file="$lang_dir/strings.xml"
+# Now, create the strings.xml files for each language
+for lang in "${!translations[@]}"; do
+    lang_dir="$VALUES_DIR/values-${lang}"
+    mkdir -p "$lang_dir"
+    xml_file="$lang_dir/strings.xml"
 
-        # Start writing the XML
-        {
-            echo '<?xml version="1.0" encoding="utf-8"?>'
-            echo '<resources>'
+    # Start writing the XML
+    {
+        echo '<?xml version="1.0" encoding="utf-8"?>'
+        echo '<resources>'
 
-            for id in $(echo "$row" | jq -r '.ID'); do
-                translation=${translations[$lang]}
-                echo "    <string name=\"$id\">$translation</string>"
-            done
+        # Add translations to the XML file
+        echo -e "${translations[$lang]}"
 
-            echo '</resources>'
-        } > "$xml_file"
+        echo '</resources>'
+    } > "$xml_file"
 
-        echo "strings.xml generated and saved to $xml_file"
-    done
+    echo "strings.xml generated and saved to $xml_file"
 done

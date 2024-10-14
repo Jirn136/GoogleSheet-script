@@ -2,6 +2,7 @@ import sys
 import gspread
 import os
 import json
+import stat
 from oauth2client.service_account import ServiceAccountCredentials
 from io import StringIO
 from xml.etree.ElementTree import Element, SubElement, tostring
@@ -38,20 +39,31 @@ def fetch_strings(sheet_id):
     # Process the data and generate strings.xml content
     strings_xml = generate_strings_xml(data)
 
-    # Define the output path for strings.xml (adjust the path as needed)
+    # Define the output path for strings.xml (adjust the path as needed for your project)
     output_path = "./resources/values/strings.xml"  # Using a generic path in the current directory
 
-    # Ensure the directory exists
+    # Ensure the directory exists and has write permissions
     output_dir = os.path.dirname(output_path)
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
         print(f"Directory '{output_dir}' created.")
+        
+        # Set the directory's permissions to ensure it's writable
+        os.chmod(output_dir, stat.S_IRWXU | stat.S_IRWXG | stat.S_IRWXO)  # Read, write, and execute for user, group, others
+
+    # Check if we have write access to the directory
+    if not os.access(output_dir, os.W_OK):
+        print(f"Directory '{output_dir}' is not writable. Adjusting permissions...")
+        os.chmod(output_dir, stat.S_IRWXU | stat.S_IRWXG | stat.S_IRWXO)
 
     # Save the strings.xml to the specified path
-    with open(output_path, "w", encoding="utf-8") as f:
-        f.write(strings_xml)
-
-    print(f"strings.xml generated and saved to {output_path}")
+    try:
+        with open(output_path, "w", encoding="utf-8") as f:
+            f.write(strings_xml)
+        print(f"strings.xml generated and saved to {output_path}")
+    except Exception as e:
+        print(f"Error writing to the file: {e}")
+        sys.exit(1)
 
 def generate_strings_xml(data):
     # Create the root element for the XML

@@ -1,4 +1,4 @@
-name: Update Translations
+name: Fetch Strings from Google Sheets
 
 on:
   workflow_dispatch:
@@ -6,42 +6,26 @@ on:
       sheet_id:
         description: 'Enter the Google Sheet ID'
         required: true
-        type: string
 
 jobs:
-  update-translations:
+  fetch_strings:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout code
+    - name: Checkout repository
       uses: actions/checkout@v2
 
     - name: Set up Python
-      uses: actions/setup-python@v4
+      uses: actions/setup-python@v2
       with:
         python-version: '3.9'
 
     - name: Install dependencies
       run: |
-        python -m pip install --upgrade pip
         pip install gspread oauth2client
 
-    - name: Create Google credentials file
+    - name: Run fetch_strings.py
       env:
-        GOOGLE_SHEET_CREDENTIALS: ${{ secrets.GOOGLE_SHEET_CREDENTIALS }}
+        GOOGLE_SHEET_CREDENTIALS: ${{ secrets.GOOGLE_SHEET_CREDENTIALS }}  # Reference the secret here
       run: |
-        echo "${GOOGLE_SHEET_CREDENTIALS}" > ${{ github.workspace }}/CREDENTIALS.json
-
-    - name: Fetch and generate strings.xml files
-      env:
-        GOOGLE_APPLICATION_CREDENTIALS: ${{ github.workspace }}/CREDENTIALS.json
-      run: |
-        python ${{ github.workspace }}/scripts/fetch_strings.py "${{ github.event.inputs.sheet_id }}"
-
-    - name: Commit and push changes
-      run: |
-        git config --local user.email "github-actions[bot]@users.noreply.github.com"
-        git config --local user.name "github-actions[bot]"
-        git add app/src/main/res/
-        git commit -m "Update translations from Google Sheet" || echo "No changes to commit"
-        git push
+        python /home/runner/work/String-updater/String-updater/scripts/fetch_strings.py ${{ github.event.inputs.sheet_id }}

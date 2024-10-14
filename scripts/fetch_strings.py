@@ -40,6 +40,9 @@ def fetch_strings(sheet_id):
     # Determine languages from the columns (all columns after 'ID', 'Type', and 'Quantity')
     languages = list(data[0].keys())[3:]  # Skip the first three columns (ID, Type, and Quantity)
 
+    # Set Git user info
+    set_git_user_info()
+
     # Process the data and generate strings.xml content for each language
     for lang in languages:
         strings_xml = generate_strings_xml(data, lang)
@@ -75,6 +78,24 @@ def fetch_strings(sheet_id):
 
     # Commit changes
     commit_changes()
+
+def set_git_user_info():
+    # Get GitHub user email and name from environment variables
+    git_user_email = os.getenv('GIT_USER_EMAIL')
+    git_user_name = os.getenv('GIT_USER_NAME')
+    
+    if not git_user_email or not git_user_name:
+        print("GitHub user email or name not found in environment variables.")
+        sys.exit(1)
+
+    # Set Git user configuration
+    try:
+        subprocess.run(['git', 'config', '--global', 'user.email', git_user_email], check=True)
+        subprocess.run(['git', 'config', '--global', 'user.name', git_user_name], check=True)
+        print(f"Git user configured: {git_user_name} <{git_user_email}>")
+    except subprocess.CalledProcessError as e:
+        print(f"Error setting Git user info: {e}")
+        sys.exit(1)
 
 def generate_strings_xml(data, lang):
     # Create the root element for the XML

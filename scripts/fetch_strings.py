@@ -38,8 +38,8 @@ def fetch_strings(sheet_id):
     # Process the data and generate strings.xml content
     strings_xml = generate_strings_xml(data)
 
-    # Define the output path for strings.xml
-    output_path = "app/src/main/res/values/strings.xml"  # Adjust this path as needed for your project
+    # Define the output path for strings.xml (update this to fit your project)
+    output_path = "resources/values/strings.xml"  # Adjust this path as needed for your project
 
     # Ensure the directory exists
     output_dir = os.path.dirname(output_path)

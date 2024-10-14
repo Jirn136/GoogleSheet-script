@@ -123,8 +123,15 @@ jobs:
       - name: Run fetch_strings.sh
         run: ./fetch_strings.sh ${{ github.event.inputs.sheet_id }}
 
-      - name: Upload strings.xml files
-        uses: actions/upload-artifact@v2
-        with:
-          name: strings-xml-files
-          path: resources/**  # Adjust this if your structure is different
+      - name: Configure Git
+        run: |
+          git config --local user.name "GitHub Action"
+          git config --local user.email "action@github.com"
+
+      - name: Commit and push changes
+        run: |
+          git add resources/
+          git commit -m "Add generated strings.xml files from Google Sheets"
+          git push
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

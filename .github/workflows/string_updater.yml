@@ -24,6 +24,11 @@ jobs:
       run: |
         pip install gspread oauth2client
 
+    - name: Configure Git user
+      run: |
+        git config --global user.email "${{ secrets.GITHUB_USER_EMAIL }}"
+        git config --global user.name "${{ secrets.GITHUB_USER_NAME }}"
+
     - name: Run fetch_strings.py
       env:
         GOOGLE_SHEET_CREDENTIALS: ${{ secrets.CREDENTIALS }}  # Reference the secret here

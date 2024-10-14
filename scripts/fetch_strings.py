@@ -1,9 +1,9 @@
 import sys
 import gspread
 import os
-import json
 from oauth2client.service_account import ServiceAccountCredentials
 from io import StringIO
+import json
 from xml.etree.ElementTree import Element, SubElement, tostring
 from xml.dom.minidom import parseString
 
@@ -38,16 +38,8 @@ def fetch_strings(sheet_id):
     # Process the data and generate strings.xml content
     strings_xml = generate_strings_xml(data)
 
-    # Define the output path for strings.xml
+    # Save the strings.xml to the Android project's res directory
     output_path = "app/src/main/res/values/strings.xml"  # Adjust this path as needed for your project
-
-    # Ensure the directory exists
-    output_dir = os.path.dirname(output_path)
-    if not os.path.exists(output_dir):
-        os.makedirs(output_dir)
-        print(f"Directory '{output_dir}' created.")
-
-    # Save the strings.xml to the specified path
     with open(output_path, "w", encoding="utf-8") as f:
         f.write(strings_xml)
 

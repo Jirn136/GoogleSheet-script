@@ -53,6 +53,9 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
+# Remove existing strings.xml files to avoid duplication
+find "$VALUES_DIR" -name "strings.xml" -type f -delete
+
 # Generate strings.xml for each language column
 echo "$DATA" | jq -c '.[]' | while IFS= read -r row; do
     declare -A translations
@@ -68,7 +71,7 @@ echo "$DATA" | jq -c '.[]' | while IFS= read -r row; do
         mkdir -p "$lang_dir"
         xml_file="$lang_dir/strings.xml"
 
-        # If it's the first run, start the XML file structure
+        # If the file doesn't exist, create it with the XML header
         if [ ! -f "$xml_file" ]; then
             echo '<?xml version="1.0" encoding="utf-8"?>' > "$xml_file"
             echo '<resources>' >> "$xml_file"
@@ -81,8 +84,11 @@ echo "$DATA" | jq -c '.[]' | while IFS= read -r row; do
             quantity=$(echo "$row" | jq -r '.Quantity')
             if ! grep -q "<plurals name=\"$id\">" "$xml_file"; then
                 echo "    <plurals name=\"$id\">" >> "$xml_file"
+                echo "        <item quantity=\"$quantity\">${translations[$lang]}</item>" >> "$xml_file"
+                echo "    </plurals>" >> "$xml_file"
+            else
+                sed -i "/<plurals name=\"$id\">/a\        <item quantity=\"$quantity\">${translations[$lang]}</item>" "$xml_file"
             fi
-            echo "        <item quantity=\"$quantity\">${translations[$lang]}</item>" >> "$xml_file"
         fi
     done
 done

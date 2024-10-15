@@ -1,0 +1,5 @@
+/* Localizable strings for fr */
+"txt_name" = "nam";
+"txt_age" = "ag";
+"txt_plural.one" = "plu";
+"txt_plural.other" = "plus";

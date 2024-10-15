@@ -1,0 +1,5 @@
+/* Localizable strings for en */
+"txt_name" = "Name";
+"txt_age" = "Age";
+"txt_plural.one" = "plural";
+"txt_plural.other" = "plurals";

@@ -7,7 +7,7 @@ on:
         description: 'Enter the Google Sheet ID'
         required: true
       gid:
-        description: 'Enter the gid of the worksheet (leave blank for default gid: 0)'
+        description: 'Enter the Google Sheet gid (optional, default is 0)'
         required: false
         default: '0'
 
@@ -35,7 +35,7 @@ jobs:
         env: 
           CREDENTIALS: ${{ secrets.CREDENTIALS }}  # Set environment variable here
         run: |
-          ./scripts/fetch_strings.sh ${{ github.event.inputs.sheet_id }} "${{ github.event.inputs.gid }}"
+          ./scripts/fetch_strings.sh ${{ github.event.inputs.sheet_id }} ${{ github.event.inputs.gid }}
 
       - name: Configure Git
         run: |

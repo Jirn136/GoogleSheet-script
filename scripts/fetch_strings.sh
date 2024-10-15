@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Fetch strings from Google Sheets and generate strings.xml files
+# Fetch strings from Google Sheets and generate strings.xml and Localizable.strings files
 
 # Check for required environment variable
 if [ -z "$CREDENTIALS" ]; then
@@ -8,18 +8,19 @@ if [ -z "$CREDENTIALS" ]; then
     exit 1
 fi
 
-# Check for required arguments (Sheet ID and optional gid)
-if [ "$#" -lt 1 ]; then
-    echo "Usage: $0 <sheet_id> [gid]"
+# Check for required argument
+if [ "$#" -ne 1 ]; then
+    echo "Usage: $0 <sheet_id>"
     exit 1
 fi
 
 SHEET_ID=$1
-GID=${2:-0}  # Set GID to the second argument if provided, otherwise default to 0
-VALUES_DIR="./resources"
+ANDROID_VALUES_DIR="./build/generated-resources/android"
+IOS_VALUES_DIR="./build/generated-resources/ios"
 
-# Create output directory if it does not exist
-mkdir -p "$VALUES_DIR"
+# Create output directories if they do not exist
+mkdir -p "$ANDROID_VALUES_DIR"
+mkdir -p "$IOS_VALUES_DIR"
 
 # Fetch data from Google Sheets using Python
 DATA=$(python - <<END
@@ -38,25 +39,13 @@ creds = ServiceAccountCredentials.from_json_keyfile_dict(creds_data, scope)
 
 client = gspread.authorize(creds)
 
-# Open the spreadsheet by ID
+# Open the spreadsheet by ID and fetch the first worksheet
 sheet = client.open_by_key("$SHEET_ID")
+worksheet = sheet.get_worksheet(0)  # Get the first worksheet
 
-# Find the worksheet based on the GID
-try:
-    worksheet = None
-    for ws in sheet.worksheets():
-        if str(ws.id) == "$GID":
-            worksheet = ws
-            break
-    if worksheet is None:
-        raise ValueError("Worksheet with gid $GID not found")
-
-    # Fetch all records from the worksheet
-    data = worksheet.get_all_records()
-    print(json.dumps(data))
-except Exception as e:
-    print(f"Error: {e}")
-    exit(1)
+# Fetch all records from the worksheet
+data = worksheet.get_all_records()
+print(json.dumps(data))
 END
 )
 
@@ -66,10 +55,11 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
-# Remove existing strings.xml files to avoid duplication
-find "$VALUES_DIR" -name "strings.xml" -type f -delete
+# Remove existing strings.xml and Localizable.strings files to avoid duplication
+find "$ANDROID_VALUES_DIR" -name "strings.xml" -type f -delete
+find "$IOS_VALUES_DIR" -name "Localizable.strings" -type f -delete
 
-# Generate strings.xml for each language column
+# Generate strings.xml and Localizable.strings for each language column
 echo "$DATA" | jq -c '.[]' | while IFS= read -r row; do
     declare -A translations
     id=$(echo "$row" | jq -r '.ID')
@@ -79,34 +69,53 @@ echo "$DATA" | jq -c '.[]' | while IFS= read -r row; do
     for lang in $(echo "$row" | jq -r 'keys_unsorted[] | select(. != "ID" and . != "Type" and . != "Quantity")'); do
         translations[$lang]=$(echo "$row" | jq -r ".\"$lang\"")
 
-        # Define the output directory and file
-        lang_dir="$VALUES_DIR/values-${lang}"
-        mkdir -p "$lang_dir"
-        xml_file="$lang_dir/strings.xml"
+        # Android strings.xml generation
+        android_lang_dir="$ANDROID_VALUES_DIR/values-${lang}"
+        mkdir -p "$android_lang_dir"
+        android_xml_file="$android_lang_dir/strings.xml"
 
         # If the file doesn't exist, create it with the XML header
-        if [ ! -f "$xml_file" ]; then
-            echo '<?xml version="1.0" encoding="utf-8"?>' > "$xml_file"
-            echo '<resources>' >> "$xml_file"
+        if [ ! -f "$android_xml_file" ]; then
+            echo '<?xml version="1.0" encoding="utf-8"?>' > "$android_xml_file"
+            echo '<resources>' >> "$android_xml_file"
         fi
 
-        # Handle different types
+        # Handle different types for Android
         if [ "$type" == "string" ]; then
-            echo "    <string name=\"$id\">${translations[$lang]}</string>" >> "$xml_file"
+            echo "    <string name=\"$id\">${translations[$lang]}</string>" >> "$android_xml_file"
         elif [ "$type" == "plural" ]; then
             quantity=$(echo "$row" | jq -r '.Quantity')
-            if ! grep -q "<plurals name=\"$id\">" "$xml_file"; then
-                echo "    <plurals name=\"$id\">" >> "$xml_file"
-                echo "        <item quantity=\"$quantity\">${translations[$lang]}</item>" >> "$xml_file"
-                echo "    </plurals>" >> "$xml_file"
+            if ! grep -q "<plurals name=\"$id\">" "$android_xml_file"; then
+                echo "    <plurals name=\"$id\">" >> "$android_xml_file"
+                echo "        <item quantity=\"$quantity\">${translations[$lang]}</item>" >> "$android_xml_file"
+                echo "    </plurals>" >> "$android_xml_file"
             else
-                sed -i "/<plurals name=\"$id\">/a\        <item quantity=\"$quantity\">${translations[$lang]}</item>" "$xml_file"
+                sed -i "/<plurals name=\"$id\">/a\        <item quantity=\"$quantity\">${translations[$lang]}</item>" "$android_xml_file"
             fi
+        fi
+
+        # iOS Localizable.strings generation
+        ios_lang_dir="$IOS_VALUES_DIR/$lang.lproj"
+        mkdir -p "$ios_lang_dir"
+        ios_strings_file="$ios_lang_dir/Localizable.strings"
+
+        # If the file doesn't exist, create it with the iOS format header
+        if [ ! -f "$ios_strings_file" ]; then
+            echo "/* Localizable strings for $lang */" > "$ios_strings_file"
+        fi
+
+        # Handle different types for iOS
+        if [ "$type" == "string" ]; then
+            echo "\"$id\" = \"${translations[$lang]}\";" >> "$ios_strings_file"
+        elif [ "$type" == "plural" ]; then
+            # iOS does not natively support plurals in the same way, so this may require a custom approach.
+            quantity=$(echo "$row" | jq -r '.Quantity')
+            echo "\"$id.$quantity\" = \"${translations[$lang]}\";" >> "$ios_strings_file"
         fi
     done
 done
 
-# Close all strings.xml files properly
-find "$VALUES_DIR" -name "strings.xml" | while read -r file; do
+# Close all Android strings.xml files properly
+find "$ANDROID_VALUES_DIR" -name "strings.xml" | while read -r file; do
     echo "</resources>" >> "$file"
 done

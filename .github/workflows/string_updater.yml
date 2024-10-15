@@ -6,10 +6,6 @@ on:
       sheet_id:
         description: 'Enter the Google Sheet ID'
         required: true
-      gid:
-        description: 'Enter the Google Sheet gid (optional, default is 0)'
-        required: false
-        default: '0'
 
 jobs:
   fetch_strings:
@@ -35,7 +31,7 @@ jobs:
         env: 
           CREDENTIALS: ${{ secrets.CREDENTIALS }}  # Set environment variable here
         run: |
-          ./scripts/fetch_strings.sh ${{ github.event.inputs.sheet_id }} ${{ github.event.inputs.gid }}
+          ./scripts/fetch_strings.sh ${{ github.event.inputs.sheet_id }}
 
       - name: Configure Git
         run: |
@@ -44,8 +40,8 @@ jobs:
 
       - name: Commit and push changes
         run: |
-          git add resources/
-          git commit -m "Add generated strings.xml files from Google Sheets"
+          git add build/generated-resources/
+          git commit -m "Add generated strings.xml and Localizable.strings files from Google Sheets"
           git push
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

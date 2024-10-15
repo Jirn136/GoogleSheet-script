@@ -8,7 +8,7 @@ if [ -z "$CREDENTIALS" ]; then
     exit 1
 fi
 
-# Check for required argument
+# Check for required argument (Sheet ID)
 if [ "$#" -ne 1 ]; then
     echo "Usage: $0 <sheet_id>"
     exit 1
@@ -16,6 +16,12 @@ fi
 
 SHEET_ID=$1
 VALUES_DIR="./resources"
+
+# Prompt the user for the gid (worksheet ID)
+read -p "Enter the gid for the worksheet (press Enter to use default gid): " GID
+
+# Set GID to a default value if none is entered (default to the first worksheet's gid: 0)
+GID=${GID:-0}
 
 # Create output directory if it does not exist
 mkdir -p "$VALUES_DIR"
@@ -37,13 +43,25 @@ creds = ServiceAccountCredentials.from_json_keyfile_dict(creds_data, scope)
 
 client = gspread.authorize(creds)
 
-# Open the spreadsheet by ID and fetch the first worksheet
+# Open the spreadsheet by ID
 sheet = client.open_by_key("$SHEET_ID")
-worksheet = sheet.get_worksheet(0)  # Get the first worksheet
 
-# Fetch all records from the worksheet
-data = worksheet.get_all_records()
-print(json.dumps(data))
+# Find the worksheet based on the GID
+try:
+    worksheet = None
+    for ws in sheet.worksheets():
+        if str(ws.id) == "$GID":
+            worksheet = ws
+            break
+    if worksheet is None:
+        raise ValueError("Worksheet with gid $GID not found")
+
+    # Fetch all records from the worksheet
+    data = worksheet.get_all_records()
+    print(json.dumps(data))
+except Exception as e:
+    print(f"Error: {e}")
+    exit(1)
 END
 )
 

@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="txt_name">nam</string>
+    <string name="txt_age">ag</string>
+    <plurals name="txt_plural">
+        <item quantity="other"></item>
+        <item quantity="one">plu</item>
+    </plurals>
+</resources>

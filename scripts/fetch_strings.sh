@@ -8,15 +8,16 @@ if [ -z "$CREDENTIALS" ]; then
     exit 1
 fi
 
-# Check for required argument
-if [ "$#" -ne 1 ]; then
-    echo "Usage: $0 <sheet_id>"
+# Check for required argument (Sheet ID)
+if [ "$#" -lt 1 ]; then
+    echo "Usage: $0 <sheet_id> [gid]"
     exit 1
 fi
 
 SHEET_ID=$1
-ANDROID_VALUES_DIR="./build/generated-resources/android"
-IOS_VALUES_DIR="./build/generated-resources/ios"
+GID=${2:-0}  # Set GID to the second argument or default to 0 if none is provided
+ANDROID_VALUES_DIR="./resources/android"
+IOS_VALUES_DIR="./resources/ios"
 
 # Create output directories if they do not exist
 mkdir -p "$ANDROID_VALUES_DIR"
@@ -39,13 +40,25 @@ creds = ServiceAccountCredentials.from_json_keyfile_dict(creds_data, scope)
 
 client = gspread.authorize(creds)
 
-# Open the spreadsheet by ID and fetch the first worksheet
+# Open the spreadsheet by ID
 sheet = client.open_by_key("$SHEET_ID")
-worksheet = sheet.get_worksheet(0)  # Get the first worksheet
 
-# Fetch all records from the worksheet
-data = worksheet.get_all_records()
-print(json.dumps(data))
+# Find the worksheet based on the GID
+try:
+    worksheet = None
+    for ws in sheet.worksheets():
+        if str(ws.id) == "$GID":
+            worksheet = ws
+            break
+    if worksheet is None:
+        raise ValueError("Worksheet with gid $GID not found")
+
+    # Fetch all records from the worksheet
+    data = worksheet.get_all_records()
+    print(json.dumps(data))
+except Exception as e:
+    print(f"Error: {e}")
+    exit(1)
 END
 )
 

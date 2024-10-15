@@ -8,20 +8,15 @@ if [ -z "$CREDENTIALS" ]; then
     exit 1
 fi
 
-# Check for required argument (Sheet ID)
-if [ "$#" -ne 1 ]; then
-    echo "Usage: $0 <sheet_id>"
+# Check for required arguments (Sheet ID and optional gid)
+if [ "$#" -lt 1 ]; then
+    echo "Usage: $0 <sheet_id> [gid]"
     exit 1
 fi
 
 SHEET_ID=$1
+GID=${2:-0}  # Set GID to the second argument if provided, otherwise default to 0
 VALUES_DIR="./resources"
-
-# Prompt the user for the gid (worksheet ID)
-read -p "Enter the gid for the worksheet (press Enter to use default gid): " GID
-
-# Set GID to a default value if none is entered (default to the first worksheet's gid: 0)
-GID=${GID:-0}
 
 # Create output directory if it does not exist
 mkdir -p "$VALUES_DIR"

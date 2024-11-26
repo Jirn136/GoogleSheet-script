@@ -9,6 +9,9 @@ on:
       gid:
         description: 'Enter the GID for the worksheet (leave empty for default GID 0)'
         required: false
+      filepath:
+        description: 'Enter the file path for storing the generated files (leave empty for default ./resources)'
+        required: false
 
 jobs:
   fetch_strings:
@@ -34,7 +37,7 @@ jobs:
         env: 
           CREDENTIALS: ${{ secrets.CREDENTIALS }}  # Set environment variable here
         run: |
-          ./scripts/fetch_strings.sh ${{ github.event.inputs.sheet_id }} "${{ github.event.inputs.gid }}"
+          ./scripts/fetch_strings.sh ${{ github.event.inputs.sheet_id }} "${{ github.event.inputs.gid }}" "${{ github.event.inputs.filepath }}"
 
       - name: Configure Git
         run: |

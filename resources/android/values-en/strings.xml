@@ -1,9 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="txt_name">Name</string>
-    <string name="txt_age">Age</string>
-    <plurals name="txt_plural">
-        <item quantity="other">plurals</item>
-        <item quantity="one">plural</item>
+    <string name="txt_sample">Hello world</string>
+    <string name="txt_new_string">Welcome</string>
+    <plurals name="txt_multiple">
+        <item quantity="other">samples</item>
+        <item quantity="one">sample</item>
     </plurals>
+    <string name="txt_great">Great</string>
 </resources>

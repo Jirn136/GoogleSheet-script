@@ -1,5 +1,6 @@
 /* Localizable strings for en */
-"txt_name" = "Name";
-"txt_age" = "Age";
-"txt_plural.one" = "plural";
-"txt_plural.other" = "plurals";
+"txt_sample" = "Hello world";
+"txt_new_string" = "Welcome";
+"txt_multiple.one" = "sample";
+"txt_multiple.other" = "samples";
+"txt_great" = "Great";

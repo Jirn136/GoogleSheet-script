@@ -1,9 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="txt_name">nam</string>
-    <string name="txt_age">ag</string>
-    <plurals name="txt_plural">
-        <item quantity="other">plus</item>
-        <item quantity="one">plu</item>
+    <string name="txt_sample">hallo</string>
+    <string name="txt_new_string">bienvenu</string>
+    <plurals name="txt_multiple">
+        <item quantity="other">sadpeqwo</item>
+        <item quantity="one">sampdkf</item>
     </plurals>
+    <string name="txt_great">woqepiqwe</string>
 </resources>

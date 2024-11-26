@@ -10,14 +10,16 @@ fi
 
 # Check for required argument (Sheet ID)
 if [ "$#" -lt 1 ]; then
-    echo "Usage: $0 <sheet_id> [gid]"
+    echo "Usage: $0 <sheet_id> [gid] [filepath]"
     exit 1
 fi
 
 SHEET_ID=$1
 GID=${2:-0}  # Set GID to the second argument or default to 0 if none is provided
-ANDROID_VALUES_DIR="./resources/android"
-IOS_VALUES_DIR="./resources/ios"
+FILE_PATH=${3:-"./resources"}  # Use the provided file path or default to ./resources
+
+ANDROID_VALUES_DIR="$FILE_PATH/android"
+IOS_VALUES_DIR="$FILE_PATH/ios"
 
 # Create output directories if they do not exist
 mkdir -p "$ANDROID_VALUES_DIR"

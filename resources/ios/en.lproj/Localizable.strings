@@ -1,6 +1,0 @@
-/* Localizable strings for en */
-"txt_sample" = "Hello world";
-"txt_new_string" = "Welcome";
-"txt_multiple.one" = "sample";
-"txt_multiple.other" = "samples";
-"txt_great" = "Great";

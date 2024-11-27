@@ -47,7 +47,7 @@ jobs:
       - name: Commit and push changes
         run: |
           git add resources/
-          git commit -m "Add generated strings.xml and Localizable.strings files from Google Sheets"
-          git push
+          git commit -m "Add generated strings.xml and Localizable.strings files from Google Sheets" || echo "No changes to commit"
+          git push origin ${{ github.ref_name }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
